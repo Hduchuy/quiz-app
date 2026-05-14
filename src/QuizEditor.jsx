@@ -545,7 +545,7 @@ export function QuizEditor({
   }, [onSettingsChange]);
 
   return (
-    <div className="quiz-editor" style={{ paddingInline: 'clamp(12px, 2vw, 24px)' }}>
+    <div className="quiz-editor editor-header-heights" style={{ paddingInline: 'clamp(12px, 2vw, 24px)' }}>
       {/* Top Toolbar */}
       <div className="editor-topbar">
         <button className="btn-back" onClick={onCancel}>

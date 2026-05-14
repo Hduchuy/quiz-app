@@ -22,6 +22,13 @@ export function QuizCard({
     (question.options || []).filter(o => o.correct).length > 1
   ));
 
+  // Calculate required and selected counts for multi-select
+  const requiredAnswers = question.maxCorrectAnswers ||
+    (question.options || []).filter(o => o.correct).length;
+  const selectedCount = Array.isArray(selectedAnswer) ? selectedAnswer.length : 0;
+  const showRequiredBadge = isMultiSelect && requiredAnswers >= 2;
+  const showSelectionCounter = showRequiredBadge && selectedCount > 0 && selectedCount < requiredAnswers && !showResult;
+
   const isSelectedCorrect = () => {
     if (!showResult || !isMultiSelect) {
       const selectedOpt = (question.options || []).find(o => o.id === selectedAnswer);
@@ -53,9 +60,14 @@ export function QuizCard({
           <span className="quiz-card-meta">
             Câu hỏi {questionIndex + 1} / {totalQuestions}
           </span>
-          {isMultiSelect && (
-            <span className="quiz-card-badge">
-              Chọn {question.maxCorrectAnswers || 'nhiều'} đáp án
+          {showRequiredBadge && !showSelectionCounter && (
+            <span className="quiz-card-badge quiz-card-badge-multi">
+              Chọn {requiredAnswers} đáp án
+            </span>
+          )}
+          {showSelectionCounter && (
+            <span className="quiz-card-badge quiz-card-badge-progress">
+              Đã chọn {selectedCount}/{requiredAnswers}
             </span>
           )}
         </div>
@@ -116,13 +128,11 @@ export function QuizCard({
           )}
           {/* Helper message for multi-select when not enough selected */}
           {showHelper && isMultiSelect && !showResult && (() => {
-            const requiredAnswers = question.maxCorrectAnswers ||
-              (question.options || []).filter(o => o.correct).length;
-            const selectedCount = Array.isArray(selectedAnswer) ? selectedAnswer.length : 0;
-            if (selectedCount > 0 && selectedCount < requiredAnswers) {
+            const localSelectedCount = Array.isArray(selectedAnswer) ? selectedAnswer.length : 0;
+            if (localSelectedCount > 0 && localSelectedCount < requiredAnswers) {
               return (
                 <div className="multi-select-helper">
-                  Chọn thêm {requiredAnswers - selectedCount} đáp án
+                  Chọn thêm {requiredAnswers - localSelectedCount} đáp án
                 </div>
               );
             }

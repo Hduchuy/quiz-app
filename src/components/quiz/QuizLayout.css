@@ -1160,6 +1160,19 @@
   margin-left: 6px;
 }
 
+.quiz-card-badge-multi {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.quiz-card-badge-progress {
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.625rem;
+}
+
 /* Quiz Card Question */
 .quiz-card-question {
   font-size: 0.9375rem;
