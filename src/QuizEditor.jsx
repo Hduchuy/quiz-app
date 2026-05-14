@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateId } from './utils/quizModels';
 import { DEFAULT_SETTINGS, normalizeSettings } from './utils/quizSettings';
@@ -6,16 +7,76 @@ import { SettingsButton } from './components/ui';
 import './App.css';
 
 // ============================================================================
-// Icon-only Settings Button with Dropdown
+// Mobile Settings Sheet (Bottom Sheet) - Mounts to body via Portal
+// ============================================================================
+function MobileSettingsSheet({ isOpen, onClose, settings, onChange }) {
+  // Render via Portal to avoid parent layout constraints
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <motion.div
+            className="mobile-sheet-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+          />
+
+          {/* Sheet */}
+          <motion.div
+            className="mobile-settings-sheet"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            role="dialog"
+            aria-label="Tùy chọn làm bài"
+          >
+            <div className="mobile-sheet-handle" />
+            <div className="mobile-sheet-header">
+              <h3 className="mobile-sheet-title">Tùy chọn làm bài</h3>
+              <button className="mobile-sheet-close" onClick={onClose} aria-label="Đóng">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mobile-sheet-content">
+              <SettingsButton settings={settings} onChange={onChange} />
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+// ============================================================================
+// Icon-only Settings Button with Dropdown (Desktop)
 // ============================================================================
 function IconSettingsButton({ settings, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  // Close on click outside
+  // Detect mobile viewport
   useEffect(() => {
-    if (!isOpen) return;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close on click outside (desktop only)
+  useEffect(() => {
+    if (!isOpen || isMobile) return;
 
     const handleClickOutside = (e) => {
       if (
@@ -28,7 +89,6 @@ function IconSettingsButton({ settings, onChange }) {
       }
     };
 
-    // Delay to avoid immediate close
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 0);
@@ -37,7 +97,7 @@ function IconSettingsButton({ settings, onChange }) {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   // Close on Escape
   useEffect(() => {
@@ -54,6 +114,49 @@ function IconSettingsButton({ settings, onChange }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // Render mobile sheet on mobile
+  if (isMobile) {
+    return (
+      <>
+        <button
+          ref={buttonRef}
+          className="icon-settings-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Cài đặt"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          <svg
+            className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-45' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </button>
+        <MobileSettingsSheet
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          settings={settings}
+          onChange={onChange}
+        />
+      </>
+    );
+  }
+
+  // Desktop dropdown
   return (
     <div className="icon-settings-wrapper">
       <button

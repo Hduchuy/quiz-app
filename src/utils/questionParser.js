@@ -117,16 +117,14 @@ export function parseQuestions(text) {
         // If found in question text, remove it from the displayed text
         if (chonMatch) {
           questionText = questionText.replace(/\(.*chọn.*?\)|\[.*chọn.*?\]/gi, '').trim();
-          console.log(`[PARSER] Found "Chọn" in question text, remaining: "${questionText}"`);
         }
       }
       
       let maxCorrectAnswers = null;
       if (chonMatch) {
         maxCorrectAnswers = parseInt(chonMatch[1], 10);
-        console.log(`[PARSER] ✓ Detected "Chọn ${maxCorrectAnswers}" from: "${nextLine || questionText}"`);
         if (nextLine.match(/chọn/i)) {
-          i++; // Skip the next line only if it contains the pattern
+          i++;
         }
       }
 
@@ -203,7 +201,6 @@ export function parseQuestions(text) {
     const correctCount = currentQuestion.options.filter(o => o.correct).length;
     if (correctCount > 1 && currentQuestion.maxCorrectAnswers === null) {
       currentQuestion.maxCorrectAnswers = correctCount;
-      console.log(`[PARSER] Inferred multi-answer from ${correctCount} correct options`);
     }
     questions.push(currentQuestion);
   }
@@ -216,20 +213,6 @@ export function parseQuestions(text) {
  */
 export async function loadQuiz(file) {
   const text = await extractText(file);
-  
-  // Debug: show first few lines
-  const lines = text.split('\n').filter(l => l.trim());
-  console.log('[LOAD QUIZ] First 10 lines:', lines.slice(0, 10));
-  
   const questions = parseQuestions(text);
-  
-  // Debug: show parsed questions
-  console.log('[LOAD QUIZ] Parsed questions:', questions.map(q => ({
-    question: q.question?.substring(0, 50),
-    maxCorrectAnswers: q.maxCorrectAnswers,
-    type: q.type,
-    optionsCount: q.options?.length
-  })));
-  
   return questions;
 }

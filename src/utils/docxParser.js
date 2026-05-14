@@ -90,35 +90,22 @@ export async function parseDocx(file) {
     }
   }
   
-  console.log("=== EXTRACTED PARAGRAPHS ===");
-  paragraphs.forEach((p, i) => {
-    const flags = [];
-    if (p.isRed) flags.push('RED');
-    if (p.isBold) flags.push('BOLD');
-    if (p.numId) flags.push(`numId=${p.numId}`);
-    const flagStr = flags.length ? ` [${flags.join(', ')}]` : '';
-    console.log(`[${i}] ${p.text.substring(0, 60)}${p.text.length > 60 ? '...' : ''}${flagStr}`);
-  });
-  console.log("============================");
-  
   return paragraphs;
 }
 
 function parseParagraphs(paragraphs) {
-  console.log("=== PARSING QUESTIONS ===");
-  
   const questions = [];
   let currentQuestion = null;
-  
+
   for (let i = 0; i < paragraphs.length; i++) {
     const p = paragraphs[i];
-    
+
     // NEW QUESTION
     if (/^Câu\s+\d+/i.test(p.text)) {
       if (currentQuestion) {
         questions.push(currentQuestion);
       }
-      
+
       const questionText = p.text.replace(/^Câu\s+\d+[:).]\s*/i, '').trim();
       currentQuestion = {
         type: null,
@@ -126,15 +113,13 @@ function parseParagraphs(paragraphs) {
         options: [],
         statements: []
       };
-      console.log(`\nNew question: "${questionText}"`);
       continue;
     }
-    
+
     if (!currentQuestion) {
-      console.log(`Skipping: "${p.text.substring(0, 40)}..."`);
       continue;
     }
-    
+
     // MULTIPLE CHOICE option (A. B. C. D.)
     if (/^[A-D][).:]/i.test(p.text)) {
       currentQuestion.type = 'multiple';
@@ -143,10 +128,9 @@ function parseParagraphs(paragraphs) {
         text: optionText,
         correct: p.isRed // Red color marks correct answer
       });
-      console.log(`  Option "${optionText}" ${p.isRed ? '[CORRECT]' : ''}`);
       continue;
     }
-    
+
     // TRUE/FALSE STATEMENT (paragraphs with numId + bold = Word numbered list item)
     if (p.numId && p.isBold && !/^đúng$|^sai$/i.test(p.text)) {
       // Set type to truefalse-group
@@ -155,12 +139,11 @@ function parseParagraphs(paragraphs) {
         text: p.text,
         answer: null
       });
-      console.log(`  Statement: "${p.text.substring(0, 50)}..."`);
       continue;
     }
-    
+
     // Statement WITHOUT numId but bold (continuation or inline list)
-    if (!p.numId && p.isBold && 
+    if (!p.numId && p.isBold &&
         currentQuestion.type === 'truefalse-group' &&
         currentQuestion.statements.length > 0 &&
         p.text.length > 20 &&
@@ -170,53 +153,31 @@ function parseParagraphs(paragraphs) {
         text: p.text,
         answer: null
       });
-      console.log(`  Statement (bold, no numId): "${p.text.substring(0, 50)}..."`);
       continue;
     }
-    
+
     // TRUE/FALSE ANSWER (Đúng/Sai in separate paragraph)
     if (/^đúng$|^sai$/i.test(p.text)) {
       // Set type to truefalse-group if not already set
       if (currentQuestion.type === null) {
         currentQuestion.type = 'truefalse-group';
       }
-      
+
       // Assign answer to the last statement
       if (currentQuestion.type === 'truefalse-group' && currentQuestion.statements.length > 0) {
         const lastStatement = currentQuestion.statements[currentQuestion.statements.length - 1];
         if (lastStatement.answer === null) {
           lastStatement.answer = /^đúng$/i.test(p.text);
-          console.log(`  → Answer: ${lastStatement.answer ? 'Đúng' : 'Sai'}`);
           continue;
         }
       }
     }
-    
-    console.log(`  Ignored: "${p.text.substring(0, 40)}..."`);
   }
-  
+
   if (currentQuestion) {
     questions.push(currentQuestion);
   }
-  
-  console.log("\n=== FINAL QUESTIONS ===");
-  questions.forEach((q, i) => {
-    console.log(`\nQ${i + 1}: ${q.question}`);
-    console.log(`  Type: ${q.type}`);
-    if (q.type === 'multiple') {
-      q.options.forEach((o, j) => {
-        console.log(`  ${String.fromCharCode(65 + j)}. ${o.text} ${o.correct ? '[CORRECT]' : ''}`);
-      });
-    } else if (q.type === 'truefalse-group') {
-      q.statements.forEach((s, j) => {
-        console.log(`  ${j + 1}. ${s.text.substring(0, 50)}... → ${s.answer !== null ? (s.answer ? 'Đúng' : 'Sai') : '[NO ANSWER]'}`);
-      });
-    } else {
-      console.log(`  WARNING: Unknown type - ${JSON.stringify(q)}`);
-    }
-  });
-  console.log("=======================");
-  
+
   return questions;
 }
 
@@ -261,11 +222,7 @@ export function prepareQuiz(questions) {
 }
 
 export async function loadAndParseDocx(file) {
-  console.log("=== PARSING DOCX ===");
   const paragraphs = await parseDocx(file);
-  
   const questions = parseParagraphs(paragraphs);
-  console.log("=== PARSED QUESTIONS ===");
-  console.log(JSON.stringify(questions, null, 2));
   return questions;
 }

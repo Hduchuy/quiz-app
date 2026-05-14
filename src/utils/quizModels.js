@@ -213,12 +213,6 @@ function regenerateDisplayLabels(options) {
  * - Selection is stored by option.id, so scoring remains correct
  */
 export function prepareQuiz(questions) {
-  // Debug: show first question's maxCorrectAnswers
-  console.log('[prepareQuiz] Input:', questions.map(q => ({
-    q: q.question?.substring(0, 30),
-    maxCorrectAnswers: q.maxCorrectAnswers
-  })));
-
   // Shuffle question order
   const shuffledQuestions = shuffleArray(questions);
 
@@ -245,11 +239,6 @@ export function prepareQuiz(questions) {
 
     return q;
   });
-
-  console.log('[prepareQuiz] Output:', result.map(q => ({
-    q: q.question?.substring(0, 30),
-    maxCorrectAnswers: q.maxCorrectAnswers
-  })));
 
   return result;
 }

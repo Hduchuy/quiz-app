@@ -43,12 +43,5 @@ export async function importQuizFromText(rawText) {
   // Normalize questions
   const normalized = normalizeQuestions(questions);
 
-  console.log('[importQuizFromText] Success:', {
-    rawLength: rawText.length,
-    textLength: text.length,
-    parsedCount: questions.length,
-    normalizedCount: normalized.length
-  });
-
   return normalized;
 }

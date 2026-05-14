@@ -30,7 +30,6 @@ export function loadSavedSession() {
     
     // Version check - could add migration here
     if (!saved.version || saved.version !== CURRENT_VERSION) {
-      console.log('QuizBuilder: Version mismatch, clearing old data');
       clearSavedSession();
       return null;
     }
@@ -54,7 +53,6 @@ export function saveSession(state) {
     };
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    console.log('QuizBuilder: Session saved at', toSave.savedAt);
     return true;
   } catch (err) {
     console.error('QuizBuilder: Error saving session', err);
@@ -68,7 +66,6 @@ export function saveSession(state) {
 export function clearSavedSession() {
   try {
     localStorage.removeItem(STORAGE_KEY);
-    console.log('QuizBuilder: Session cleared');
     return true;
   } catch (err) {
     console.error('QuizBuilder: Error clearing session', err);
