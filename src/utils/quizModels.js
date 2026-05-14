@@ -318,3 +318,62 @@ export function reprepareQuiz(editedQuestions, savedShuffledQuestions) {
     })
     .filter(Boolean);
 }
+
+/**
+ * Prepare quiz with settings - applies shuffle based on configuration
+ * Does NOT mutate original questions - returns a new array
+ *
+ * @param {Array} questions - Original questions array (not mutated)
+ * @param {Object} settings - Quiz settings object
+ * @param {boolean} settings.shuffleQuestions - Randomize question order
+ * @param {boolean} settings.shuffleAnswers - Randomize answer order within questions
+ * @returns {Array} New questions array with shuffle applied
+ */
+export function prepareQuizWithSettings(questions, settings = {}) {
+  const {
+    shuffleQuestions = false,
+    shuffleAnswers = false
+  } = settings;
+
+  // Clone questions to avoid mutation
+  const clonedQuestions = questions.map(q => ({
+    ...q,
+    options: q.options ? q.options.map(opt => ({ ...opt })) : [],
+    statements: q.statements ? q.statements.map(s => ({ ...s })) : []
+  }));
+
+  // Optionally shuffle question order
+  const orderedQuestions = shuffleQuestions
+    ? shuffleArray(clonedQuestions)
+    : clonedQuestions;
+
+  const result = orderedQuestions.map(q => {
+    if (q.type === 'multiple') {
+      // Optionally shuffle options
+      const orderedOptions = shuffleAnswers
+        ? shuffleArray(q.options)
+        : q.options;
+
+      // Regenerate labels based on display order
+      const labeledOptions = regenerateDisplayLabels(orderedOptions);
+
+      return {
+        ...q,
+        options: labeledOptions,
+        statements: []
+      };
+    }
+
+    if (q.type === 'truefalse-group') {
+      return {
+        ...q,
+        options: [],
+        statements: q.statements  // Don't shuffle statements
+      };
+    }
+
+    return q;
+  });
+
+  return result;
+}

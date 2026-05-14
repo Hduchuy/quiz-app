@@ -9,7 +9,7 @@
 const STORAGE_KEY = 'quiz_builder_session';
 
 // Current version - increment when schema changes
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 /**
  * Get current timestamp
@@ -132,7 +132,8 @@ export function createQuizSnapshot({
   selectedAnswers,
   questionFileName,
   answerKeyFileName,
-  mode
+  mode,
+  quizSettings
 }) {
   return {
     questions: questions || [],
@@ -148,7 +149,8 @@ export function createQuizSnapshot({
       currentQuestionIndex: currentQuestionIndex || 0,
       selectedAnswers: selectedAnswers || {},
       questionFileName,
-      answerKeyFileName
+      answerKeyFileName,
+      quizSettings: quizSettings || null
     }
   };
 }
@@ -158,7 +160,7 @@ export function createQuizSnapshot({
  */
 export function restoreFromSession(savedSession) {
   if (!savedSession) return null;
-  
+
   return {
     questions: savedSession.quizData?.questions || [],
     editedQuestions: savedSession.editorState?.editedQuestions || [],
@@ -168,6 +170,7 @@ export function restoreFromSession(savedSession) {
     questionFileName: savedSession.quizState?.questionFileName || null,
     answerKeyFileName: savedSession.quizState?.answerKeyFileName || null,
     mode: savedSession.quizState?.mode || 'upload',
-    hasAnswerKey: savedSession.quizData?.hasAnswerKey || false
+    hasAnswerKey: savedSession.quizData?.hasAnswerKey || false,
+    quizSettings: savedSession.quizState?.quizSettings || null
   };
 }

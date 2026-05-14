@@ -1,19 +1,112 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { generateId } from './utils/quizModels';
-import './QuizEditor.css';
-
-/**
- * QuizEditor - Full-page editor with global edit mode
- *
- * Features:
- * - Global edit mode (no per-question editing)
- * - Multiple correct answers support (checkboxes)
- * - Continuous editing without save-per-question
- * - Single/Multi-choice detection
- */
+import { DEFAULT_SETTINGS, normalizeSettings } from './utils/quizSettings';
+import { SettingsButton } from './components/ui';
+import './App.css';
 
 // ============================================================================
-// Answer Option Editor (for both modes)
+// Icon-only Settings Button with Dropdown
+// ============================================================================
+function IconSettingsButton({ settings, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    // Delay to avoid immediate close
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  return (
+    <div className="icon-settings-wrapper">
+      <button
+        ref={buttonRef}
+        className="icon-settings-btn"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Cài đặt"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        <svg
+          className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-45' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            ref={dropdownRef}
+            className="icon-settings-dropdown"
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            role="menu"
+            aria-label="Tùy chọn làm bài"
+          >
+            <SettingsButton settings={settings} onChange={onChange} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ============================================================================
+// OptionEditor - Flat answer row
 // ============================================================================
 function OptionEditor({
   option,
@@ -28,30 +121,30 @@ function OptionEditor({
   const displayLabel = labels[index] || String(index + 1);
 
   return (
-    <div className={`option-editor-row ${option.correct ? 'correct-option' : ''}`}>
+    <div className={`option-row ${option.correct ? 'is-correct' : ''} ${isEditMode ? 'is-editing' : ''}`}>
       {isEditMode ? (
         <>
           <input
             type="checkbox"
-            className="option-correct-checkbox"
+            className="option-checkbox"
             checked={option.correct}
             onChange={() => onToggleCorrect(option.id)}
-            title="Đánh dấu đáp án đúng"
+            title="Đánh dấu đúng"
           />
-          <span className="option-label">{displayLabel}.</span>
+          <span className="option-label">{displayLabel}</span>
           <input
             type="text"
-            className="option-text-input"
+            className="option-input"
             value={option.text}
             onChange={(e) => onUpdateText(option.id, e.target.value)}
             placeholder={`Đáp án ${displayLabel}`}
           />
           {canRemove && (
             <button
-              className="btn-remove-option"
+              className="option-remove"
               onClick={() => onRemove(option.id)}
               type="button"
-              title="Xóa đáp án"
+              title="Xóa"
             >
               ✕
             </button>
@@ -59,11 +152,10 @@ function OptionEditor({
         </>
       ) : (
         <>
-          <span className="option-correct-indicator">
-            {option.correct ? '✓' : ''}
+          <span className={`option-indicator ${option.correct ? 'correct' : ''}`}>
+            {option.correct ? '✓' : displayLabel}
           </span>
-          <span className="option-label">{displayLabel}.</span>
-          <span className="option-text">{option.text || <em>(trống)</em>}</span>
+          <span className="option-text break-words overflow-wrap-anywhere">{option.text || <em>(trống)</em>}</span>
         </>
       )}
     </div>
@@ -71,9 +163,9 @@ function OptionEditor({
 }
 
 // ============================================================================
-// Question Card Editor (unified, no sub-edit mode)
+// QuestionItem - Flat question card
 // ============================================================================
-function QuestionCardEditor({
+function QuestionItem({
   question,
   questionIndex,
   isEditMode,
@@ -82,32 +174,45 @@ function QuestionCardEditor({
   onDeleteQuestion
 }) {
   const isMultipleChoice = question.type === 'multiple';
+  const isTrueFalse = question.type === 'truefalse-group';
   const isMultiAnswer = isMultipleChoice && question.maxCorrectAnswers && question.maxCorrectAnswers > 1;
-  
-  // DEBUG: Log props to console
-  console.log('[QuestionCardEditor]', {
-    questionText: question.question?.substring(0, 30),
-    type: question.type,
-    maxCorrectAnswers: question.maxCorrectAnswers,
-    isMultiAnswer
-  });
-  
-  const canRemoveOption = (question.options || []).length > 2;
+  const canRemoveOption = isMultipleChoice && (question.options || []).length > 2;
 
   const handleQuestionTextChange = (text) => {
     onUpdateQuestion(question.id, { question: text });
   };
 
   const handleOptionTextChange = (optionId, text) => {
-    onUpdateOption(question.id, optionId, { text });
+    if (isTrueFalse) {
+      const newStatements = (question.statements || []).map(s =>
+        s.id === optionId ? { ...s, text } : s
+      );
+      onUpdateQuestion(question.id, { statements: newStatements });
+    } else {
+      onUpdateOption(question.id, optionId, { text });
+    }
   };
 
   const handleToggleCorrect = (optionId) => {
+    if (isTrueFalse) {
+      // For true/false, toggle statement answer
+      const statementIndex = (question.statements || []).findIndex(s => s.id === optionId);
+      if (statementIndex === -1) return;
+
+      const newStatements = (question.statements || []).map((s, i) => {
+        if (i === statementIndex) {
+          return { ...s, answer: s.answer === true ? false : true };
+        }
+        return s;
+      });
+      onUpdateQuestion(question.id, { statements: newStatements });
+      return;
+    }
+
+    // For multiple choice
     const option = (question.options || []).find(o => o.id === optionId);
     if (!option) return;
 
-    // In EDITOR: always use checkbox behavior (multi-select allowed)
-    // This allows marking any number of correct answers
     const newOptions = (question.options || []).map(o => ({
       ...o,
       correct: o.id === optionId ? !o.correct : o.correct
@@ -116,6 +221,19 @@ function QuestionCardEditor({
   };
 
   const handleAddOption = () => {
+    if (isTrueFalse) {
+      // For true/false, add a new statement
+      const newStatement = {
+        id: generateId(),
+        text: '',
+        answer: null,
+        userAnswer: null
+      };
+      onUpdateQuestion(question.id, { statements: [...(question.statements || []), newStatement] });
+      return;
+    }
+
+    // For multiple choice
     const labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     const options = question.options || [];
     const nextLabel = labels[options.length] || `Option ${options.length + 1}`;
@@ -127,12 +245,18 @@ function QuestionCardEditor({
       correct: false
     };
 
-    onUpdateQuestion(question.id, {
-      options: [...options, newOption]
-    });
+    onUpdateQuestion(question.id, { options: [...options, newOption] });
   };
 
   const handleRemoveOption = (optionId) => {
+    if (isTrueFalse) {
+      // For true/false, remove a statement
+      const newStatements = (question.statements || []).filter(s => s.id !== optionId);
+      onUpdateQuestion(question.id, { statements: newStatements });
+      return;
+    }
+
+    // For multiple choice
     const options = question.options || [];
     if (options.length <= 2) return;
 
@@ -152,266 +276,183 @@ function QuestionCardEditor({
     }
   };
 
+  const hasCorrectAnswer = isTrueFalse
+    ? (question.statements || []).every(s => s.answer !== null && s.answer !== undefined)
+    : (question.options || []).some(o => o.correct);
+
   return (
-    <div className={`editor-card ${isEditMode ? 'editing' : ''} ${isMultiAnswer ? 'multi-answer-card' : ''}`}>
-      <div className="editor-header">
-        <span className="editor-number">Câu {questionIndex + 1}</span>
-        <span className="editor-type" data-type={isMultipleChoice ? 'multiple' : 'truefalse'}>
-          {isMultipleChoice ? 'Trắc nghiệm' : 'Đúng/Sai'}
-        </span>
-        {/* DEBUG VISIBLE INDICATOR */}
-        <span style={{ 
-          background: question.maxCorrectAnswers ? '#e91e63' : '#999',
-          color: 'white', 
-          padding: '2px 8px', 
-          borderRadius: '4px',
-          fontSize: '11px'
-        }}>
-          maxCorrectAnswers: {question.maxCorrectAnswers ?? 'NULL'}
-        </span>
-        {isMultiAnswer && (
-          <span className="editor-type multi-answer" style={{ background: '#e91e63', color: 'white' }}>
-            ★ CHỌN {question.maxCorrectAnswers} ĐÁP ÁN
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`question-item ${!hasCorrectAnswer && !isEditMode ? 'missing-answer' : ''}`}
+    >
+      {/* Header */}
+      <div className="question-header">
+        <div className="question-meta">
+          <span className="question-number">Câu {questionIndex + 1}</span>
+          <span className={`question-type ${isMultipleChoice ? 'type-multiple' : 'type-truefalse'}`}>
+            {isMultipleChoice ? (isMultiAnswer ? `Chọn ${question.maxCorrectAnswers}` : 'Trắc nghiệm') : 'Đúng/Sai'}
           </span>
-        )}
-        {!isMultiAnswer && isMultipleChoice && (
-          <span className="editor-type" style={{ background: '#666', color: 'white' }}>
-            CHỌN 1 ĐÁP ÁN
-          </span>
-        )}
-        {isEditMode && (
-          <button
-            className="btn-delete"
-            onClick={handleDeleteQuestion}
-            type="button"
-            title="Xóa câu hỏi"
-          >
-            🗑️ Xóa
-          </button>
-        )}
-      </div>
-
-      <div className="editor-content">
-        <label className="editor-label">Câu hỏi:</label>
-        {isEditMode ? (
-          <textarea
-            className="editor-textarea"
-            value={question.question}
-            onChange={(e) => handleQuestionTextChange(e.target.value)}
-            rows={2}
-          />
-        ) : (
-          <p className="editor-question-text">{question.question}</p>
-        )}
-
-        <label className="editor-label">
-          Đáp án:
-          {isEditMode && (question.options || []).length < 8 && (
-            <button
-              className="btn-add-option"
-              onClick={handleAddOption}
-              type="button"
-            >
-              + Thêm đáp án
-            </button>
-          )}
-        </label>
-
-        <div className="options-list">
-          {question.options.map((option, i) => (
-            <OptionEditor
-              key={option.id}
-              option={option}
-              index={i}
-              isEditMode={isEditMode}
-              onUpdateText={handleOptionTextChange}
-              onToggleCorrect={handleToggleCorrect}
-              onRemove={handleRemoveOption}
-              canRemove={canRemoveOption}
-            />
-          ))}
         </div>
-
-        {!question.options.some(o => o.correct) && (
-          <p className="warning-text">⚠️ Chưa chọn đáp án đúng</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// True/False Question Editor (for truefalse-group type)
-// ============================================================================
-function TrueFalseQuestionEditor({
-  question,
-  questionIndex,
-  isEditMode,
-  onUpdateQuestion,
-  onDeleteQuestion
-}) {
-  const handleQuestionTextChange = (text) => {
-    onUpdateQuestion(question.id, { question: text });
-  };
-
-  const handleStatementTextChange = (statementId, text) => {
-    const newStatements = question.statements.map(s =>
-      s.id === statementId ? { ...s, text } : s
-    );
-    onUpdateQuestion(question.id, { statements: newStatements });
-  };
-
-  const handleToggleAnswer = (statementId, answer) => {
-    const newStatements = question.statements.map(s =>
-      s.id === statementId ? { ...s, answer } : s
-    );
-    onUpdateQuestion(question.id, { statements: newStatements });
-  };
-
-  const handleAddStatement = () => {
-    const newStatement = {
-      id: generateId(),
-      text: '',
-      answer: null
-    };
-    onUpdateQuestion(question.id, {
-      statements: [...question.statements, newStatement]
-    });
-  };
-
-  const handleRemoveStatement = (statementId) => {
-    const statements = question.statements || [];
-    if (statements.length <= 1) return;
-    const newStatements = statements.filter(s => s.id !== statementId);
-    onUpdateQuestion(question.id, { statements: newStatements });
-  };
-
-  const handleDeleteQuestion = () => {
-    if (confirm('Xóa câu hỏi này?')) {
-      onDeleteQuestion(question.id);
-    }
-  };
-
-  return (
-    <div className={`editor-card ${isEditMode ? 'editing' : ''}`}>
-      <div className="editor-header">
-        <span className="editor-number">Câu {questionIndex + 1}</span>
-        <span className="editor-type" data-type="truefalse">Đúng/Sai</span>
         {isEditMode && (
           <button
-            className="btn-delete"
+            className="question-delete"
             onClick={handleDeleteQuestion}
             type="button"
             title="Xóa câu hỏi"
           >
-            🗑️ Xóa
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
           </button>
+        )}
+        {!hasCorrectAnswer && !isEditMode && (
+          <span className="question-warning">⚠️ Chưa có đáp án</span>
         )}
       </div>
 
-      <div className="editor-content">
-        <label className="editor-label">Câu hỏi:</label>
+      {/* Question Content */}
+      <div className="question-content">
         {isEditMode ? (
           <textarea
-            className="editor-textarea"
+            className="question-textarea"
             value={question.question}
             onChange={(e) => handleQuestionTextChange(e.target.value)}
             rows={2}
           />
         ) : (
-          <p className="editor-question-text">{question.question}</p>
+          <p className="question-text">{question.question}</p>
         )}
+      </div>
 
-        <label className="editor-label">Các mệnh đề:</label>
-        <div className="statements-list">
-          {question.statements.map((statement, i) => (
-            <div key={statement.id} className="statement-editor-row">
-              <span className="statement-number">{i + 1}.</span>
-              {isEditMode ? (
-                <>
-                  <input
-                    type="text"
-                    className="statement-text-input"
-                    value={statement.text}
-                    onChange={(e) => handleStatementTextChange(statement.id, e.target.value)}
-                    placeholder={`Mệnh đề ${i + 1}`}
-                  />
-                  <div className="tf-answer-selector">
-                    <label className={`tf-option ${statement.answer === true ? 'selected' : ''}`}>
-                      <input
-                        type="radio"
-                        name={`tf-${statement.id}`}
-                        checked={statement.answer === true}
-                        onChange={() => handleToggleAnswer(statement.id, true)}
-                      />
-                      Đúng
-                    </label>
-                    <label className={`tf-option ${statement.answer === false ? 'selected' : ''}`}>
-                      <input
-                        type="radio"
-                        name={`tf-${statement.id}`}
-                        checked={statement.answer === false}
-                        onChange={() => handleToggleAnswer(statement.id, false)}
-                      />
-                      Sai
-                    </label>
-                  </div>
-                  {(question.statements || []).length > 1 && (
-                    <button
-                      className="btn-remove-statement"
-                      onClick={() => handleRemoveStatement(statement.id)}
-                      type="button"
-                      title="Xóa mệnh đề"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <span className="statement-text">{statement.text || <em>(trống)</em>}</span>
-                  <span className={`answer-badge ${statement.answer === true ? 'correct' : statement.answer === false ? 'incorrect' : 'unset'}`}>
-                    {statement.answer === true ? 'Đúng ✓' : statement.answer === false ? 'Sai ✗' : '?'}
-                  </span>
-                </>
+      {/* Answers */}
+      <div className="question-answers">
+        {isTrueFalse ? (
+          /* True/False Answers */
+          <>
+            <div className="answers-header">
+              <span className="answers-label">Các mệnh đề</span>
+              {isEditMode && (
+                <button
+                  className="add-option-btn"
+                  onClick={handleAddOption}
+                  type="button"
+                >
+                  + Thêm
+                </button>
               )}
             </div>
-          ))}
-        </div>
-
-        {isEditMode && (question.statements || []).length < 10 && (
-          <button
-            className="btn-add-statement"
-            onClick={handleAddStatement}
-            type="button"
-          >
-            + Thêm mệnh đề
-          </button>
-        )}
-
-        {!question.statements.every(s => s.answer !== null) && (
-          <p className="warning-text">⚠️ Một số mệnh đề chưa có đáp án</p>
+            <div className="answers-list">
+              {(question.statements || []).map((statement, i) => (
+                <div
+                  key={statement.id}
+                  className={`option-row ${statement.answer === true ? 'is-correct' : ''} ${isEditMode ? 'is-editing' : ''}`}
+                >
+                  {isEditMode ? (
+                    <>
+                      <input
+                        type="checkbox"
+                        className="option-checkbox"
+                        checked={statement.answer === true}
+                        onChange={() => handleToggleCorrect(statement.id)}
+                        title="Đúng"
+                      />
+                      <span className="option-label">{i + 1}</span>
+                      <input
+                        type="text"
+                        className="option-input"
+                        value={statement.text}
+                        onChange={(e) => {
+                          const newStatements = (question.statements || []).map((s, idx) =>
+                            idx === i ? { ...s, text: e.target.value } : s
+                          );
+                          onUpdateQuestion(question.id, { statements: newStatements });
+                        }}
+                        placeholder={`Mệnh đề ${i + 1}`}
+                      />
+                      <span className="truefalse-badge">
+                        {statement.answer === true ? 'Đúng' : statement.answer === false ? 'Sai' : '?'}
+                      </span>
+                      <button
+                        className="option-remove"
+                        onClick={() => handleRemoveOption(statement.id)}
+                        type="button"
+                        title="Xóa"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className={`option-indicator ${statement.answer === true ? 'correct' : ''}`}>
+                        {statement.answer === true ? '✓' : statement.answer === false ? '✗' : '?'}
+                      </span>
+                      <span className="option-text break-words overflow-wrap-anywhere">
+                        {statement.text || <em>(trống)</em>}
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          /* Multiple Choice Answers */
+          <>
+            <div className="answers-header">
+              <span className="answers-label">Đáp án</span>
+              {isEditMode && (question.options || []).length < 8 && (
+                <button
+                  className="add-option-btn"
+                  onClick={handleAddOption}
+                  type="button"
+                >
+                  + Thêm
+                </button>
+              )}
+            </div>
+            <div className="answers-list">
+              {question.options.map((option, i) => (
+                <OptionEditor
+                  key={option.id}
+                  option={option}
+                  index={i}
+                  isEditMode={isEditMode}
+                  onUpdateText={handleOptionTextChange}
+                  onToggleCorrect={handleToggleCorrect}
+                  onRemove={handleRemoveOption}
+                  canRemove={canRemoveOption}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 // ============================================================================
-// Quiz Editor (Main Component)
+// QuizEditor (Main Component) - Flat SaaS Style
 // ============================================================================
 export function QuizEditor({
   questions,
   onUpdate,
   onStartQuiz,
   onCancel,
-  onExport
+  onExport,
+  settings = DEFAULT_SETTINGS,
+  onSettingsChange
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedQuestions, setEditedQuestions] = useState(questions);
   const [hasChanges, setHasChanges] = useState(false);
+
+  const [localSettings, setLocalSettings] = useState(normalizeSettings(settings));
 
   // Sync editedQuestions when questions prop changes
   if (questions !== editedQuestions && !hasChanges) {
@@ -421,13 +462,9 @@ export function QuizEditor({
   const filteredQuestions = editedQuestions.filter(q => {
     const questionText = (q.question || '').toLowerCase();
     const optionsText = (q.options || []).map(o => (o.text || '').toLowerCase()).join(' ');
-    const statementsText = (q.statements || []).map(s => (s.text || '').toLowerCase()).join(' ');
     const searchLower = (searchTerm || '').toLowerCase();
 
-    const matchesSearch = questionText.includes(searchLower) ||
-      optionsText.includes(searchLower) ||
-      statementsText.includes(searchLower);
-
+    const matchesSearch = questionText.includes(searchLower) || optionsText.includes(searchLower);
     const matchesType = filterType === 'all' ||
       (filterType === 'multiple' && q.type === 'multiple') ||
       (filterType === 'truefalse' && q.type === 'truefalse-group');
@@ -438,11 +475,9 @@ export function QuizEditor({
   // Statistics
   const stats = {
     total: editedQuestions.length,
-    multiple: editedQuestions.filter(q => q.type === 'multiple').length,
-    truefalse: editedQuestions.filter(q => q.type === 'truefalse-group').length,
     withAnswers: editedQuestions.filter(q => {
       if (q.type === 'multiple') return (q.options || []).some(o => o.correct);
-      if (q.type === 'truefalse-group') return (q.statements || []).every(s => s.answer !== null);
+      if (q.type === 'truefalse-group') return (q.statements || []).every(s => s.answer !== null && s.answer !== undefined);
       return false;
     }).length
   };
@@ -484,7 +519,6 @@ export function QuizEditor({
     });
   }, []);
 
-  // Edit mode handlers
   const handleEnterEditMode = () => {
     setEditedQuestions(questions);
     setIsEditMode(true);
@@ -503,150 +537,212 @@ export function QuizEditor({
     setHasChanges(false);
   };
 
-  return (
-    <div className="quiz-editor">
-      <div className="editor-toolbar">
-        <h2>Kiểm tra & Chỉnh sửa câu hỏi</h2>
+  const handleSettingsChange = useCallback((newSettings) => {
+    setLocalSettings(newSettings);
+    if (onSettingsChange) {
+      onSettingsChange(newSettings);
+    }
+  }, [onSettingsChange]);
 
-        <div className="toolbar-stats">
-          <span className="stat-badge">Tổng: {stats.total}</span>
-          <span className="stat-badge multiple">Trắc nghiệm: {stats.multiple}</span>
-          <span className="stat-badge truefalse">Đ/S: {stats.truefalse}</span>
-          <span className={`stat-badge answered ${stats.withAnswers === stats.total ? 'complete' : ''}`}>
-            Có đáp án: {stats.withAnswers}/{stats.total}
+  return (
+    <div className="quiz-editor" style={{ paddingInline: 'clamp(12px, 2vw, 24px)' }}>
+      {/* Top Toolbar */}
+      <div className="editor-topbar">
+        <button className="btn-back" onClick={onCancel}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="hidden sm:inline">Quay lại</span>
+        </button>
+
+        <div className="editor-stats">
+          <span className="stat-item">
+            <span className="stat-value">{stats.total}</span>
+            <span className="stat-label">câu</span>
+          </span>
+          <span className="stat-divider" />
+          <span className="stat-item">
+            <span className={`stat-value ${stats.withAnswers === stats.total ? 'text-success' : 'text-warning'}`}>
+              {stats.withAnswers}
+            </span>
+            <span className="stat-label">có đáp án</span>
           </span>
         </div>
 
-        <div className="toolbar-filters">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Tìm kiếm câu hỏi..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-
-          <select
-            className="filter-select"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="all">Tất cả</option>
-            <option value="multiple">Trắc nghiệm</option>
-            <option value="truefalse">Đúng/Sai</option>
-          </select>
-        </div>
-
-        <div className="toolbar-actions">
-          {isEditMode ? (
+        <div className="editor-actions">
+          {!isEditMode ? (
             <>
               <button
-                className="btn btn-primary"
-                onClick={handleSaveAll}
+                className="btn-action btn-secondary"
+                onClick={handleEnterEditMode}
               >
-                💾 Lưu tất cả
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className="btn-action-text">Chỉnh sửa</span>
               </button>
               <button
-                className="btn btn-secondary"
-                onClick={handleCancelChanges}
+                className="btn-action btn-secondary"
+                onClick={() => onExport(false)}
               >
-                Hủy thay đổi
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="btn-action-text">Tải quiz</span>
+              </button>
+              <button
+                className="btn-action btn-export"
+                onClick={() => onExport(true)}
+                disabled={!canStartQuiz}
+                title="Tải quiz kèm đáp án"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="btn-action-text">Tải đáp án</span>
               </button>
             </>
           ) : (
             <>
               <button
-                className="btn btn-edit-mode"
-                onClick={handleEnterEditMode}
-              >
-                ✏️ Chỉnh sửa
-              </button>
-              <button
-                className="btn btn-export"
+                className="btn-action btn-secondary"
                 onClick={() => onExport(false)}
-                title="Tải quiz không có đáp án"
               >
-                📥 Tải Quiz
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="btn-action-text">Tải quiz</span>
               </button>
               <button
-                className="btn btn-export btn-export-answers"
+                className="btn-action btn-export"
                 onClick={() => onExport(true)}
                 disabled={!canStartQuiz}
                 title="Tải quiz kèm đáp án"
               >
-                📥 Tải kèm Đáp án
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="btn-action-text">Tải đáp án</span>
+              </button>
+              <button
+                className="btn-action btn-ghost"
+                onClick={handleCancelChanges}
+              >
+                <span className="btn-action-text">Hủy</span>
+              </button>
+              <button
+                className="btn-action btn-primary"
+                onClick={handleSaveAll}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="btn-action-text">Lưu</span>
               </button>
             </>
           )}
         </div>
       </div>
 
-      <div className="editor-questions">
-        {filteredQuestions.length === 0 ? (
-          <div className="no-questions">
-            {editedQuestions.length === 0 ? (
-              <p>Không có câu hỏi nào được tìm thấy.</p>
-            ) : (
-              <p>Không tìm thấy câu hỏi phù hợp với tìm kiếm.</p>
-            )}
+      {/* Search & Filter & Settings */}
+      <div className="editor-searchbar">
+        <div className="toolbar-left">
+          <div className="search-input-wrapper">
+            <svg className="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Tìm kiếm câu hỏi..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        ) : (
-          filteredQuestions.map((question) => {
-            const originalIndex = editedQuestions.findIndex(q => q.id === question.id);
+        </div>
 
-            if (question.type === 'truefalse-group') {
-              return (
-                <TrueFalseQuestionEditor
-                  key={question.id}
-                  question={question}
-                  questionIndex={originalIndex}
-                  isEditMode={isEditMode}
-                  onUpdateQuestion={handleUpdateQuestion}
-                  onDeleteQuestion={handleDeleteQuestion}
-                />
-              );
-            }
+        <div className="toolbar-right">
+          <div className="filter-tabs">
+            <button
+              className={`filter-tab ${filterType === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterType('all')}
+            >
+              Tất cả
+            </button>
+            <button
+              className={`filter-tab ${filterType === 'multiple' ? 'active' : ''}`}
+              onClick={() => setFilterType('multiple')}
+            >
+              Trắc nghiệm
+            </button>
+            <button
+              className={`filter-tab ${filterType === 'truefalse' ? 'active' : ''}`}
+              onClick={() => setFilterType('truefalse')}
+            >
+              Đúng/Sai
+            </button>
+          </div>
+          <IconSettingsButton
+            settings={localSettings}
+            onChange={handleSettingsChange}
+          />
+        </div>
+      </div>
 
-            return (
-              <QuestionCardEditor
+      {/* Questions List */}
+      <div className="editor-content">
+        <AnimatePresence mode="popLayout">
+          {filteredQuestions.length === 0 ? (
+            <div className="empty-state">
+              <svg className="w-12 h-12 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>{editedQuestions.length === 0 ? 'Không có câu hỏi nào' : 'Không tìm thấy câu hỏi phù hợp'}</p>
+            </div>
+          ) : (
+            filteredQuestions.map((question) => (
+              <QuestionItem
                 key={question.id}
                 question={question}
-                questionIndex={originalIndex}
+                questionIndex={editedQuestions.findIndex(q => q.id === question.id)}
                 isEditMode={isEditMode}
                 onUpdateQuestion={handleUpdateQuestion}
                 onUpdateOption={handleUpdateOption}
                 onDeleteQuestion={handleDeleteQuestion}
               />
-            );
-          })
-        )}
+            ))
+          )}
+        </AnimatePresence>
       </div>
 
+      {/* Bottom Action Area */}
       <div className="editor-footer">
-        <button className="btn btn-secondary" onClick={onCancel}>
-          ← Quay lại
-        </button>
-
         <div className="footer-actions">
-          {!canStartQuiz && (
-            <p className="warning-text">
-              ⚠️ Cần điền đáp án cho tất cả câu hỏi trước khi bắt đầu
-            </p>
-          )}
-
-          <button
-            className="btn btn-primary btn-start-quiz"
-            onClick={() => {
-              // Apply any unsaved changes first
-              if (hasChanges || isEditMode) {
-                onUpdate(editedQuestions);
-              }
-              onStartQuiz();
-            }}
-            disabled={!canStartQuiz}
-          >
-            Bắt đầu làm bài →
-          </button>
+          <div className="btn-start-wrapper">
+            {!canStartQuiz && (
+              <span className="warning-badge">
+                ⚠️ Cần điền đáp án
+              </span>
+            )}
+            <motion.button
+              className={`btn-start ${!canStartQuiz ? 'disabled' : ''}`}
+              onClick={() => {
+                if (hasChanges || isEditMode) {
+                  onUpdate(editedQuestions);
+                }
+                onStartQuiz(localSettings);
+              }}
+              disabled={!canStartQuiz}
+              whileHover={canStartQuiz ? { scale: 1.02 } : {}}
+              whileTap={canStartQuiz ? { scale: 0.98 } : {}}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Bắt đầu làm bài
+            </motion.button>
+          </div>
         </div>
       </div>
     </div>

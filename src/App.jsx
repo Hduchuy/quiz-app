@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { loadQuiz } from './utils/questionParser';
 import { importQuizFromText } from './utils/quizImporter';
 import {
   parseAnswerKey,
   hasAnswerKey,
-  prepareQuiz,
+  prepareQuizWithSettings,
   reprepareQuiz,
   normalizeQuestions
 } from './utils/quizModels';
+import { DEFAULT_SETTINGS, normalizeSettings } from './utils/quizSettings';
 import {
   loadSavedSession,
   clearSavedSession,
@@ -18,244 +20,70 @@ import { QuizEditor } from './QuizEditor';
 import { RestoreSession } from './components/RestoreSession';
 import { QuizLibrary, SubjectPage } from './components/QuizLibrary';
 import { downloadQuiz } from './utils/exportQuiz';
+import {
+  GlassCard,
+  ProgressBar,
+  AnimatedContainer,
+  Button,
+  Badge
+} from './components/ui';
+import { QuizCard } from './components/quiz/QuizCard';
+import { ScoreCard, ResultItem } from './components/quiz/Results';
+import {
+  QuestionNavigatorGrid,
+  ProgressStats,
+  QuizInfoCard
+} from './components/quiz/Navigator';
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarSection,
+  SidebarItem,
+  SidebarFooter,
+  RightPanel,
+  RightPanelHeader,
+  RightPanelContent,
+  RightPanelFooter,
+  DesktopLayout
+} from './components/quiz/Layout';
+import {
+  QuizLayout,
+  QuizHeader,
+  QuestionSidebar,
+  MobileQuestionSheet,
+  BottomNavigation,
+  MobileNavigation,
+  QuizTimer
+} from './components/quiz/QuizLayout';
+import './components/quiz/QuizLayout.css';
 import './App.css';
 
 // ============================================================================
-// QuestionCard - renders one question during quiz
+// FeatureCard - Small feature highlight card
 // ============================================================================
-function QuestionCard({
-  question,
-  questionIndex,
-  selectedAnswer,
-  onSelectOption,
-  onToggleOption,
-  onSelectStatement
-}) {
-  // Multi-select: either maxCorrectAnswers > 1 or has multiple correct options marked
-  const isMultiSelect = question.type === 'multiple' && (
-    (question.maxCorrectAnswers && question.maxCorrectAnswers > 1) ||
-    (question.options || []).filter(o => o.correct).length > 1
-  );
-
-  // DEBUG: Log what we're receiving
-  console.log('[QuestionCard]', {
-    q: (question.question || '').substring(0, 30),
-    maxCorrectAnswers: question.maxCorrectAnswers,
-    isMultiSelect,
-    type: question.type
-  });
-
-  if (question.type === 'multiple') {
-    // Multi-select mode: use checkboxes
-    if (isMultiSelect) {
-      const selectedIds = Array.isArray(selectedAnswer) ? selectedAnswer : [];
-
-      return (
-        <div className="question-card">
-          <h2 className="question-text">
-            <span className="question-number">Câu {questionIndex + 1}:</span> {question.question}
-            <span className="multi-select-hint">(Chọn {question.maxCorrectAnswers || 'tất cả'} đáp án đúng)</span>
-          </h2>
-
-          <div className="options-list multi-select">
-            {(question.options || []).map((option) => {
-              const isSelected = selectedIds.includes(option.id);
-              return (
-                <button
-                  key={option.id}
-                  className={`option-btn checkbox-mode ${isSelected ? 'selected' : ''}`}
-                  onClick={() => onToggleOption(option.id)}
-                >
-                  <span className={`checkbox ${isSelected ? 'checked' : ''}`}>
-                    {isSelected && '✓'}
-                  </span>
-                  <span className="option-marker">{option.label}.</span>
-                  <span className="option-text">{option.text}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    // Single-select mode: use radio-style buttons
-    return (
-      <div className="question-card">
-        <h2 className="question-text">
-          <span className="question-number">Câu {questionIndex + 1}:</span> {question.question}
-        </h2>
-
-        <div className="options-list">
-          {(question.options || []).map((option) => (
-            <button
-              key={option.id}
-              className={`option-btn ${selectedAnswer === option.id ? 'selected' : ''}`}
-              onClick={() => onSelectOption(option.id)}
-            >
-              <span className="option-marker">{option.label}.</span>
-              <span className="option-text">{option.text}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (question.type === 'truefalse-group') {
-    return (
-      <div className="question-card">
-        <h2 className="question-text">
-          <span className="question-number">Câu {questionIndex + 1}:</span> {question.question}
-        </h2>
-
-        <div className="statements-list">
-          {(question.statements || []).map((statement, sIndex) => (
-            <div key={statement.id} className="statement-item">
-              <div className="statement-text">
-                <span className="statement-number">{sIndex + 1}.</span>
-                <span>{statement.text}</span>
-              </div>
-              <div className="statement-answers">
-                <button
-                  className={`tf-btn ${selectedAnswer?.[statement.id] === true ? 'selected' : ''}`}
-                  onClick={() => onSelectStatement(statement.id, true)}
-                >
-                  Đúng
-                </button>
-                <button
-                  className={`tf-btn ${selectedAnswer?.[statement.id] === false ? 'selected' : ''}`}
-                  onClick={() => onSelectStatement(statement.id, false)}
-                >
-                  Sai
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+function FeatureCard({ icon, title, description }) {
   return (
-    <div className="question-card">
-      <h2 className="question-text">
-        <span className="question-number">Câu {questionIndex + 1}:</span> {question.question}
-      </h2>
-      <p style={{ color: 'red' }}>Loại câu hỏi không xác định: {question.type}</p>
-    </div>
+    <motion.div
+      className="p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent-light)] flex-shrink-0">
+          {icon}
+        </div>
+        <div>
+          <div className="font-semibold text-sm text-[var(--color-text-primary)]">{title}</div>
+          <div className="text-xs text-[var(--color-text-muted)] mt-0.5">{description}</div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 // ============================================================================
-// ResultCard - shows one question in results
-// ============================================================================
-function ResultCard({ question, questionIndex, selectedAnswer, hasGrading }) {
-  const isMultiple = question.type === 'multiple';
-
-  // Multi-select: either maxCorrectAnswers > 1 or has multiple correct options marked
-  const isMultiSelect = isMultiple && (
-    (question.maxCorrectAnswers && question.maxCorrectAnswers > 1) ||
-    (question.options || []).filter(o => o.correct).length > 1
-  );
-
-  const isCorrect = () => {
-    if (!hasGrading) return null;
-
-    if (isMultiple) {
-      if (isMultiSelect) {
-        // Multi-select: compare arrays of IDs
-        const selectedIds = Array.isArray(selectedAnswer) ? [...selectedAnswer].sort() : [];
-        const correctIds = (question.options || [])
-          .filter(o => o.correct)
-          .map(o => o.id)
-          .sort();
-        return JSON.stringify(selectedIds) === JSON.stringify(correctIds);
-      } else {
-        // Single-select: simple comparison
-        const selected = (question.options || []).find(o => o.id === selectedAnswer);
-        return selected?.correct === true;
-      }
-    }
-
-    if (question.type === 'truefalse-group') {
-      return (question.statements || []).every(s => selectedAnswer?.[s.id] === s.answer);
-    }
-
-    return false;
-  };
-
-  const correct = isCorrect();
-
-  return (
-    <div className={`result-item ${hasGrading && correct !== null ? (correct ? 'correct' : 'incorrect') : ''}`}>
-      <div className="result-question">
-        <span className="result-number">{questionIndex + 1}.</span>
-        <span className="result-text">{question.question}</span>
-        {!hasGrading && <span className="practice-badge">Luyện tập</span>}
-        {isMultiSelect && <span className="multi-select-badge">Chọn nhiều</span>}
-      </div>
-
-      {isMultiple && (
-        <div className="result-answers">
-          {(question.options || []).map((option) => {
-            const isSelected = isMultiSelect
-              ? (Array.isArray(selectedAnswer) ? selectedAnswer : []).includes(option.id)
-              : selectedAnswer === option.id;
-            const isCorrectOption = hasGrading && option.correct;
-            const isWrongSelection = isSelected && !isCorrectOption && hasGrading;
-
-            return (
-              <div
-                key={option.id}
-                className={`result-option ${isCorrectOption ? 'correct-answer' : ''} ${isWrongSelection ? 'selected-answer' : ''}`}
-              >
-                <span className="result-option-marker">{option.label}.</span>
-                <span className="result-option-text">{option.text}</span>
-                {isCorrectOption && <span className="correct-badge">✓</span>}
-                {isWrongSelection && <span className="wrong-badge">✗</span>}
-                {isSelected && <span className="selected-badge">Bạn chọn</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {question.type === 'truefalse-group' && (
-        <div className="result-statements">
-          {(question.statements || []).map((statement, sIndex) => {
-            const userAnswer = selectedAnswer?.[statement.id];
-            const isStatementCorrect = hasGrading && userAnswer === statement.answer;
-
-            return (
-              <div key={statement.id} className="result-statement">
-                <div className={`result-statement-row ${hasGrading && isStatementCorrect ? 'correct' : ''}`}>
-                  <span className="statement-number">{sIndex + 1}.</span>
-                  <span className="statement-text">{statement.text}</span>
-                </div>
-                <div className="result-statement-answer">
-                  {hasGrading && (
-                    <span className={`answer ${statement.answer ? 'true' : 'false'}`}>
-                      Đáp án: {statement.answer ? 'Đúng' : 'Sai'}
-                    </span>
-                  )}
-                  {userAnswer !== undefined && (
-                    <span className={`user-answer ${hasGrading && isStatementCorrect ? 'correct' : 'incorrect'}`}>
-                      Bạn: {userAnswer ? 'Đúng' : 'Sai'} {hasGrading && (isStatementCorrect ? '✓' : '✗')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Main App
+// Main App - Redesigned with modern dark glassmorphism UI
 // ============================================================================
 function App() {
   // Check for saved session on mount
@@ -273,6 +101,7 @@ function App() {
   const [gameState, setGameState] = useState('upload');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
 
   // Library navigation state
   const [libraryState, setLibraryState] = useState({
@@ -283,6 +112,9 @@ function App() {
   // File inputs (only file names are persisted, not file content)
   const [questionFileName, setQuestionFileName] = useState(null);
   const [answerKeyFileName, setAnswerKeyFileName] = useState(null);
+
+  // Quiz settings
+  const [quizSettings, setQuizSettings] = useState(DEFAULT_SETTINGS);
   
   // Auto-save
   const autoSaveRef = useRef(createAutoSave(300));
@@ -292,10 +124,7 @@ function App() {
   // Auto-save effect
   // ==========================================================================
   useEffect(() => {
-    // Don't save if showing restore modal
     if (showRestoreModal) return;
-    
-    // Don't save if nothing to save
     if ((questions || []).length === 0 && (editedQuestions || []).length === 0) return;
 
     const state = {
@@ -312,25 +141,26 @@ function App() {
         currentQuestionIndex,
         selectedAnswers,
         questionFileName,
-        answerKeyFileName
+        answerKeyFileName,
+        quizSettings
       }
     };
 
-    // Only save if state changed
     const stateStr = JSON.stringify(state);
     if (stateStr !== lastSavedRef.current) {
       lastSavedRef.current = stateStr;
       autoSaveRef.current(state);
     }
   }, [
-    questions, 
-    editedQuestions, 
-    shuffledQuestions, 
-    currentQuestionIndex, 
+    questions,
+    editedQuestions,
+    shuffledQuestions,
+    currentQuestionIndex,
     selectedAnswers,
     gameState,
     questionFileName,
     answerKeyFileName,
+    quizSettings,
     showRestoreModal
   ]);
 
@@ -344,9 +174,6 @@ function App() {
       setQuestions(restored.questions);
       setEditedQuestions(restored.editedQuestions);
 
-      // Re-prepare quiz to restore shuffled state with regenerated labels
-      // This preserves the exact shuffle order from the session
-      // Only regenerates display labels (A/B/C/D) to match display positions
       const reshuffled = reprepareQuiz(
         restored.editedQuestions,
         restored.shuffledQuestions
@@ -358,6 +185,7 @@ function App() {
       setQuestionFileName(restored.questionFileName);
       setAnswerKeyFileName(restored.answerKeyFileName);
       setGameState(restored.mode);
+      setQuizSettings(restored.quizSettings || DEFAULT_SETTINGS);
     }
 
     setShowRestoreModal(false);
@@ -409,8 +237,6 @@ function App() {
 
     try {
       let parsedQuestions = await loadQuiz(questionFile);
-
-      // Normalize for consistency (same as library flow)
       parsedQuestions = normalizeQuestions(parsedQuestions);
 
       if (parsedQuestions.length === 0) {
@@ -419,13 +245,11 @@ function App() {
         return;
       }
 
-      // Apply answer key if provided
       if (answerKeyFile) {
         const answerKeyText = await answerKeyFile.text();
         const answerKey = parseAnswerKey(answerKeyText);
-        parsedQuestions = parsedQuestions.map(q => {
+        parsedQuestions = parsedQuestions.map((q, idx) => {
           if (q.type === 'multiple') {
-            const idx = parsedQuestions.indexOf(q);
             const key = String(idx + 1);
             const answers = answerKey[key] || [];
             return {
@@ -438,17 +262,12 @@ function App() {
             };
           }
           if (q.type === 'truefalse-group') {
-            const idx = parsedQuestions.indexOf(q);
             return {
               ...q,
-              statements: (q.statements || []).map((s, sIdx) => {
-                const key = `${idx + 1}.${sIdx + 1}`;
-                const answers = answerKey[key];
-                return {
-                  ...s,
-                  answer: answers ? answers[0] : null
-                };
-              })
+              statements: (q.statements || []).map((s, sIdx) => ({
+                ...s,
+                answer: answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] ?? null
+              }))
             };
           }
           return q;
@@ -471,9 +290,11 @@ function App() {
   // ==========================================================================
   // Quiz controls
   // ==========================================================================
-  const handleStartQuiz = () => {
-    const prepared = prepareQuiz(editedQuestions);
+  const handleStartQuiz = (settings = DEFAULT_SETTINGS) => {
+    const normalizedSettings = normalizeSettings(settings);
+    const prepared = prepareQuizWithSettings(editedQuestions, normalizedSettings);
     setShuffledQuestions(prepared);
+    setQuizSettings(normalizedSettings);
     setCurrentQuestionIndex(0);
     setSelectedAnswers({});
     setGameState('playing');
@@ -509,20 +330,17 @@ function App() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch quiz file
       const response = await fetch(quiz.file);
       if (!response.ok) {
         throw new Error(`Không thể tải file: ${response.status}`);
       }
       const text = await response.text();
 
-      // Use shared import pipeline (same as upload)
       let questions = await importQuizFromText(text);
       if (questions.length === 0) {
         throw new Error('Không tìm thấy câu hỏi nào trong đề thi.');
       }
 
-      // Apply answer key if bundled with quiz
       if (quiz.answerKey) {
         const answerKey = parseAnswerKey(quiz.answerKey);
         questions = questions.map((q, idx) => {
@@ -572,7 +390,6 @@ function App() {
     clearSavedSession();
     lastSavedRef.current = null;
 
-    // Reset all state
     setQuestions([]);
     setEditedQuestions([]);
     setShuffledQuestions([]);
@@ -583,8 +400,9 @@ function App() {
     setQuestionFileName(null);
     setAnswerKeyFileName(null);
     setLibraryState({ show: false, subject: null });
+    setQuizSettings(DEFAULT_SETTINGS);
+    setMobileNavExpanded(false);
 
-    // Clear file inputs
     const fileInput = document.getElementById('question-file');
     const keyFileInput = document.getElementById('answer-key-file');
     if (fileInput) fileInput.value = '';
@@ -595,7 +413,6 @@ function App() {
   // Answer selection
   // ==========================================================================
   const handleSelectOption = useCallback((optionId) => {
-    // Single-select mode
     setSelectedAnswers(prev => ({
       ...prev,
       [currentQuestionIndex]: optionId
@@ -603,20 +420,17 @@ function App() {
   }, [currentQuestionIndex]);
 
   const handleToggleOption = useCallback((optionId) => {
-    // Multi-select mode (checkbox behavior)
     setSelectedAnswers(prev => {
       const current = prev[currentQuestionIndex] || [];
       const currentArray = Array.isArray(current) ? current : [];
       const isSelected = currentArray.includes(optionId);
 
       if (isSelected) {
-        // Remove from selection
         return {
           ...prev,
           [currentQuestionIndex]: currentArray.filter(id => id !== optionId)
         };
       } else {
-        // Add to selection
         return {
           ...prev,
           [currentQuestionIndex]: [...currentArray, optionId]
@@ -672,9 +486,7 @@ function App() {
             .filter(o => o.correct)
             .map(o => o.id);
 
-          // Check if multiple correct answers
           if (correctOptionIds.length > 1) {
-            // Multi-select: compare sorted arrays
             const selectedArray = Array.isArray(userAnswer)
               ? [...userAnswer].sort()
               : (userAnswer ? [userAnswer] : []);
@@ -683,7 +495,6 @@ function App() {
               correct++;
             }
           } else {
-            // Single-select: simple comparison
             const selectedOption = q.options.find(o => o.id === userAnswer);
             if (selectedOption?.correct === true) {
               correct++;
@@ -724,129 +535,268 @@ function App() {
   }, [selectedAnswers, shuffledQuestions]);
 
   const allAnswered = shuffledQuestions.every((_, i) => isQuestionAnswered(i));
+  const answeredSet = new Set(shuffledQuestions.map((_, i) => i).filter(i => isQuestionAnswered(i)));
 
   // ==========================================================================
   // Render states
   // ==========================================================================
   const renderUploadState = () => (
-    <div className="container">
-      <header className="header">
-        <h1>Quiz App</h1>
-        <p>Làm bài trắc nghiệm từ file Word</p>
-      </header>
+    <AnimatedContainer>
+      <div className="min-h-screen lg:min-h-screen flex items-center justify-center p-4 lg:p-8">
+        {/* Desktop: 2-column layout */}
+        <div className="w-full max-w-7xl lg:grid lg:grid-cols-5 lg:gap-8 lg:items-center">
+          
+          {/* LEFT SIDE - Hero (45%) */}
+          <div className="lg:col-span-2 lg:py-8">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Logo */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-cyan)] flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <span className="text-xl font-bold text-gradient">Quiz App</span>
+              </div>
 
-      <div className="upload-area">
-        <div className="file-input-group">
-          <label className="file-label-title">File câu hỏi</label>
-          <div className="file-input-wrapper">
-            <input
-              type="file"
-              accept=".docx,.txt"
-              onChange={handleQuestionFileChange}
-              className="file-input"
-              id="question-file"
-            />
-            <label htmlFor="question-file" className="file-label">
-              <span className="file-icon">📄</span>
-              <span className="file-text">
-                {questionFileName || 'Chọn file .docx hoặc .txt'}
-              </span>
-            </label>
+              {/* Title */}
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gradient mb-4 leading-tight">
+                Làm bài trắc nghiệm dễ dàng
+              </h1>
+              
+              {/* Subtitle */}
+              <p className="text-[var(--color-text-secondary)] text-base lg:text-lg mb-8 max-w-md">
+                Tải lên file Word, làm bài thi, xem kết quả ngay. Không cần đăng ký, không giới hạn.
+              </p>
+
+              {/* Feature highlights */}
+              <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                <FeatureCard 
+                  icon={
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  }
+                  title="Upload DOCX/TXT"
+                  description="Hỗ trợ nhiều định dạng"
+                />
+                <FeatureCard 
+                  icon={
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  }
+                  title="Chấm điểm tự động"
+                  description="Kết quả ngay lập tức"
+                />
+                <FeatureCard 
+                  icon={
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  }
+                  title="Xáo trộn câu hỏi"
+                  description="Chế độ thi ngẫu nhiên"
+                />
+                <FeatureCard 
+                  icon={
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  }
+                  title="Responsive"
+                  description="Mọi thiết bị"
+                />
+              </div>
+
+              {/* Library Button - Desktop */}
+              <motion.button
+                onClick={handleOpenLibrary}
+                className="hidden lg:flex items-center gap-3 mt-8 px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-all duration-200 group w-fit"
+                whileHover={{ x: 5 }}
+              >
+                <svg className="w-6 h-6 text-[var(--color-accent-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <div className="text-left">
+                  <div className="font-semibold text-[var(--color-text-primary)]">Kho đề có sẵn</div>
+                  <div className="text-sm text-[var(--color-text-muted)]">Các bài thi mẫu</div>
+                </div>
+                <svg className="w-5 h-5 text-[var(--color-text-muted)] ml-auto group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.button>
+            </motion.div>
           </div>
-        </div>
 
-        <div className="file-input-group">
-          <label className="file-label-title">File đáp án (tùy chọn)</label>
-          <div className="file-input-wrapper">
-            <input
-              type="file"
-              accept=".txt,.docx"
-              onChange={handleAnswerKeyFileChange}
-              className="file-input"
-              id="answer-key-file"
-            />
-            <label htmlFor="answer-key-file" className="file-label">
-              <span className="file-icon">🔑</span>
-              <span className="file-text">
-                {answerKeyFileName || 'Chọn file đáp án (hoặc bỏ trống)'}
-              </span>
-            </label>
-          </div>
-          <p className="file-hint">
-            Format file đáp án: <code>1:B</code> | <code>2. C</code> | <code>28.1:Đúng</code>.<br/>
-            Hoặc dùng đáp án inline trong file câu hỏi (không cần file đáp án riêng).
-          </p>
-        </div>
+          {/* RIGHT SIDE - Upload Panel (55%) */}
+          <div className="lg:col-span-3">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <GlassCard padding="p-6 lg:p-8">
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-6">
+                  Tải lên đề thi của bạn
+                </h2>
 
-        {error && <div className="error-message">{error}</div>}
+                {/* File Inputs */}
+                <div className="space-y-4">
+                  {/* Question File */}
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                      File câu hỏi
+                    </label>
+                    <div className="file-upload-area">
+                      <input
+                        type="file"
+                        accept=".docx,.txt"
+                        onChange={handleQuestionFileChange}
+                        className="file-input"
+                        id="question-file"
+                      />
+                      <label htmlFor="question-file" className="file-upload-label file-upload-label-compact">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-[var(--color-accent-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="font-medium text-[var(--color-text-primary)] truncate">
+                              {questionFileName || 'Chọn file câu hỏi'}
+                            </div>
+                            <div className="text-xs text-[var(--color-text-muted)]">
+                              .docx hoặc .txt
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={handleUpload}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Đang xử lý...' : 'Tải lên & Kiểm tra'}
-        </button>
+                  {/* Answer Key File */}
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                      File đáp án <span className="text-[var(--color-text-muted)]">(tùy chọn)</span>
+                    </label>
+                    <div className="file-upload-area">
+                      <input
+                        type="file"
+                        accept=".txt,.docx"
+                        onChange={handleAnswerKeyFileChange}
+                        className="file-input"
+                        id="answer-key-file"
+                      />
+                      <label htmlFor="answer-key-file" className="file-upload-label file-upload-label-compact">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-10 h-10 rounded-xl bg-[var(--color-success)]/20 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className="font-medium text-[var(--color-text-primary)] truncate">
+                              {answerKeyFileName || 'Chọn file đáp án'}
+                            </div>
+                            <div className="text-xs text-[var(--color-text-muted)]">
+                              Không bắt buộc
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                      Format: <code className="px-1 py-0.5 rounded bg-[var(--color-surface)]">1:B</code> | <code className="px-1 py-0.5 rounded bg-[var(--color-surface)]">2. C</code>
+                    </p>
+                  </div>
+                </div>
 
-        <button
-          className="btn btn-library"
-          onClick={handleOpenLibrary}
-        >
-          📚 Kho đề có sẵn
-        </button>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-3 rounded-xl bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error-light)] text-sm"
+                  >
+                    {error}
+                  </motion.div>
+                )}
 
-        {questionFileName && (
-          <button
-            className="btn btn-text"
-            onClick={resetQuiz}
-          >
-            Xóa dữ liệu đã lưu
-          </button>
-        )}
-      </div>
+                {/* Buttons */}
+                <div className="mt-6 space-y-3">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleUpload}
+                    loading={isLoading}
+                    disabled={!questionFileName}
+                  >
+                    {isLoading ? 'Đang xử lý...' : 'Tải lên & Kiểm tra'}
+                  </Button>
 
-      <div className="instructions">
-        <h3>Hướng dẫn format file câu hỏi:</h3>
+                  {/* Library Button - Mobile/Tablet */}
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full lg:hidden"
+                    onClick={handleOpenLibrary}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    Kho đề có sẵn
+                  </Button>
 
-        <div className="format-example">
-          <p><strong>Trắc nghiệm A/B/C/D (đáp án inline):</strong></p>
-          <pre>{`Câu 1: 2 + 2 = ?
+                  {questionFileName && (
+                    <button
+                      className="w-full text-center text-sm text-[var(--color-text-muted)] hover:text-[var(--color-error)] transition-colors py-2"
+                      onClick={resetQuiz}
+                    >
+                      Xóa dữ liệu đã lưu
+                    </button>
+                  )}
+                </div>
+              </GlassCard>
+
+              {/* Quick format guide - Desktop only */}
+              <div className="hidden lg:block mt-6 p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-[var(--color-accent-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">Format câu hỏi</span>
+                </div>
+                <pre className="text-xs text-[var(--color-text-muted)] font-mono bg-[var(--color-bg-primary)] p-3 rounded-xl overflow-x-auto">{`Câu 1: 2 + 2 = ?
 *A. 3
 *B. 4
 C. 5
 D. 6`}</pre>
-        </div>
-
-        <div className="format-example">
-          <p><strong>Câu đúng/sai - Format A (đáp án dòng riêng):</strong></p>
-          <pre>{`Câu 28: Vì sao Nho giáo phát triển mạnh?
-1. Vì Nho giáo phù hợp với nghệ thuật
-Đúng
-2. Vì Nhà nước ủng hộ Nho giáo
-*Sai
-3. Vì Nho giáo được hoàng đế bảo trợ
-Sai`}</pre>
-        </div>
-
-        <div className="format-example">
-          <p><strong>Câu đúng/sai - Format B (đáp án cùng dòng):</strong></p>
-          <pre>{`Câu 28: Vì sao Nho giáo phát triển mạnh?
-1. Vì Nho giáo phù hợp với nghệ thuật [Đúng]
-2. Vì Nhà nước ủng hộ Nho giáo [Sai]
-3. Vì Nho giáo được hoàng đế bảo trợ [Sai]`}</pre>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
+    </AnimatedContainer>
   );
 
   const renderReviewState = () => (
-    <QuizEditor
-      questions={editedQuestions}
-      onUpdate={handleUpdateQuestions}
-      onStartQuiz={handleStartQuiz}
-      onCancel={handleCancelFromReview}
-      onExport={handleExportQuiz}
-    />
+    <AnimatedContainer key="review">
+      <QuizEditor
+        questions={editedQuestions}
+        onUpdate={handleUpdateQuestions}
+        onStartQuiz={handleStartQuiz}
+        onCancel={handleCancelFromReview}
+        onExport={handleExportQuiz}
+        settings={quizSettings}
+        onSettingsChange={setQuizSettings}
+      />
+    </AnimatedContainer>
   );
 
   const renderPlayingState = () => {
@@ -855,121 +805,186 @@ Sai`}</pre>
     const isFirstQuestion = currentQuestionIndex === 0;
     const answeredCount = shuffledQuestions.filter((_, i) => isQuestionAnswered(i)).length;
 
-    return (
-      <div className="container">
-        <div className="quiz-header">
-          <div className="progress-info">
-            Câu {currentQuestionIndex + 1} / {shuffledQuestions.length}
-            <span className="answered-count">({answeredCount}/{shuffledQuestions.length} đã trả lời)</span>
-          </div>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${((currentQuestionIndex + 1) / shuffledQuestions.length) * 100}%` }}
-            />
-          </div>
-        </div>
+    // Determine if current question should show instant result
+    const currentAnswer = selectedAnswers[currentQuestionIndex];
 
-        <QuestionCard
-          question={currentQuestion}
-          questionIndex={currentQuestionIndex}
-          selectedAnswer={selectedAnswers[currentQuestionIndex]}
-          onSelectOption={handleSelectOption}
-          onToggleOption={handleToggleOption}
-          onSelectStatement={handleSelectStatement}
+    // Calculate question type flags
+    const isMultiAnswerQuestion = currentQuestion?.type === 'multiple' && (
+      (currentQuestion.maxCorrectAnswers && currentQuestion.maxCorrectAnswers > 1) ||
+      (currentQuestion.options || []).filter(o => o.correct).length > 1
+    );
+    const isTrueFalseQuestion = currentQuestion?.type === 'truefalse-group';
+
+    // Helper to count selected answers for multiple choice
+    const getMultipleChoiceSelectedCount = (answer) => {
+      if (!answer) return 0;
+      return Array.isArray(answer) ? answer.length : 1;
+    };
+
+    // Helper to count answered statements for true/false
+    const getTrueFalseAnsweredCount = (answer, statements) => {
+      if (!statements || statements.length === 0) return 0;
+      return statements.filter(s => answer?.[s.id] !== undefined).length;
+    };
+
+    // Determine if we should show instant results
+    let shouldShowResult = false;
+    if (quizSettings.showAnswerInstantly && currentAnswer !== undefined) {
+      const hasAnswer = currentAnswer !== null && currentAnswer !== undefined;
+
+      if (!hasAnswer) {
+        shouldShowResult = false;
+      } else if (isMultiAnswerQuestion) {
+        // Multiple choice: evaluate when selected >= required (includes over-selection)
+        const requiredAnswers = currentQuestion.maxCorrectAnswers ||
+          (currentQuestion.options || []).filter(o => o.correct).length;
+        const selectedCount = getMultipleChoiceSelectedCount(currentAnswer);
+        shouldShowResult = selectedCount >= requiredAnswers;
+      } else if (isTrueFalseQuestion) {
+        // True/False: evaluate only when ALL statements are answered
+        const totalStatements = (currentQuestion.statements || []).length;
+        const answeredStatements = getTrueFalseAnsweredCount(currentAnswer, currentQuestion.statements);
+        shouldShowResult = answeredStatements >= totalStatements && totalStatements > 0;
+      } else {
+        // Single-answer multiple choice: show immediately
+        shouldShowResult = true;
+      }
+    }
+
+    const sidebar = (
+      <QuestionSidebar
+        totalQuestions={shuffledQuestions.length}
+        currentQuestion={currentQuestionIndex}
+        answeredQuestions={answeredSet}
+        onNavigate={setCurrentQuestionIndex}
+      />
+    );
+
+    const header = (
+      <QuizHeader
+        title={questionFileName || 'Làm bài thi'}
+        currentQuestion={currentQuestionIndex + 1}
+        totalQuestions={shuffledQuestions.length}
+        answeredCount={answeredCount}
+        timer={null}
+        onBack={resetQuiz}
+        showBackButton={true}
+      />
+    );
+
+    return (
+      <QuizLayout
+        sidebar={sidebar}
+        header={header}
+        className="quiz-playing-layout"
+      >
+        {/* Question Card */}
+        <AnimatePresence mode="wait">
+          <QuizCard
+            key={currentQuestionIndex}
+            question={currentQuestion}
+            questionIndex={currentQuestionIndex}
+            totalQuestions={shuffledQuestions.length}
+            selectedAnswer={currentAnswer}
+            showResult={shouldShowResult}
+            isMultiSelect={isMultiAnswerQuestion}
+            onSelectOption={handleSelectOption}
+            onToggleOption={handleToggleOption}
+            onSelectStatement={handleSelectStatement}
+          />
+        </AnimatePresence>
+
+        {/* Bottom Navigation - Desktop only */}
+        <BottomNavigation
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onSubmit={handleSubmit}
+          isFirst={isFirstQuestion}
+          isLast={isLastQuestion}
+          canSubmit={allAnswered}
+          submitLabel="Nộp bài"
         />
 
-        <div className="navigation-buttons">
-          <button
-            className="btn btn-secondary"
-            onClick={handlePrev}
-            disabled={isFirstQuestion}
-          >
-            ← Câu trước
-          </button>
+        {/* Mobile Navigation - Always visible on mobile */}
+        <MobileNavigation
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onSubmit={handleSubmit}
+          isFirst={isFirstQuestion}
+          isLast={isLastQuestion}
+          canSubmit={allAnswered}
+          currentQuestion={currentQuestionIndex + 1}
+          totalQuestions={shuffledQuestions.length}
+          submitLabel="Nộp bài"
+        />
 
-          {isLastQuestion ? (
-            <button
-              className="btn btn-success"
-              onClick={handleSubmit}
-              disabled={!allAnswered}
-            >
-              Nộp bài
-            </button>
-          ) : (
-            <button className="btn btn-primary" onClick={handleNext}>
-              Câu tiếp →
-            </button>
-          )}
-        </div>
-
-        <div className="question-dots">
-          {shuffledQuestions.map((_, index) => (
-            <button
-              key={index}
-              className={`dot ${isQuestionAnswered(index) ? 'answered' : ''} ${index === currentQuestionIndex ? 'current' : ''}`}
-              onClick={() => setCurrentQuestionIndex(index)}
-            />
-          ))}
-        </div>
-      </div>
+        {/* Mobile Question Navigator Sheet - Expandable */}
+        <MobileQuestionSheet
+          totalQuestions={shuffledQuestions.length}
+          currentQuestion={currentQuestionIndex}
+          answeredQuestions={answeredSet}
+          onNavigate={setCurrentQuestionIndex}
+          isExpanded={mobileNavExpanded}
+          onToggle={() => setMobileNavExpanded(!mobileNavExpanded)}
+        />
+      </QuizLayout>
     );
   };
 
   const renderResultsState = () => {
     const { correct, total, hasGrading } = calculateScore();
-    const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
     return (
-      <div className="container">
-        <div className="results-header">
-          <h1>{hasGrading ? 'Kết quả bài thi' : 'Kết quả luyện tập'}</h1>
-        </div>
+      <AnimatedContainer key="results">
+        <div className="min-h-screen p-6 max-w-3xl mx-auto" style={{ paddingInline: 'clamp(12px, 2vw, 24px)' }}>
+          {/* Score Card */}
+          <ScoreCard
+            correct={correct}
+            total={total}
+            hasGrading={hasGrading}
+            className="mb-8"
+          />
 
-        <div className="score-card">
-          <div className="score-circle">
-            {hasGrading ? (
-              <>
-                <span className="score-value">{correct}/{total}</span>
-                <span className="score-percent">{percentage}%</span>
-              </>
-            ) : (
-              <>
-                <span className="score-value">{editedQuestions.length}</span>
-                <span className="score-percent">câu đã làm</span>
-              </>
-            )}
+          {/* Results List */}
+          <div className="space-y-4 mb-8">
+            {shuffledQuestions.map((q, qIndex) => (
+              <ResultItem
+                key={qIndex}
+                question={q}
+                questionIndex={qIndex}
+                selectedAnswer={selectedAnswers[qIndex]}
+                hasGrading={hasGrading}
+              />
+            ))}
           </div>
-          {hasGrading ? (
-            <p className="score-message">
-              {percentage >= 80 ? 'Xuất sắc!' : percentage >= 60 ? 'Khá tốt!' : percentage >= 40 ? 'Cần cố gắng hơn' : 'Cần học thêm'}
-            </p>
-          ) : (
-            <p className="score-message">Xem lại các đáp án bạn đã chọn</p>
-          )}
-        </div>
 
-        <div className="results-details">
-          {shuffledQuestions.map((q, qIndex) => (
-            <ResultCard
-              key={qIndex}
-              question={q}
-              questionIndex={qIndex}
-              selectedAnswer={selectedAnswers[qIndex]}
-              hasGrading={hasGrading}
-            />
-          ))}
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="flex-1"
+              onClick={resetQuiz}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Làm bài mới
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              className="flex-1"
+              onClick={() => handleStartQuiz(quizSettings)}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Làm lại (xáo trộn lại)
+            </Button>
+          </div>
         </div>
-
-        <div className="action-buttons">
-          <button className="btn btn-secondary" onClick={resetQuiz}>
-            Làm bài mới
-          </button>
-          <button className="btn btn-primary" onClick={handleStartQuiz}>
-            Làm lại (xáo trộn lại)
-          </button>
-        </div>
-      </div>
+      </AnimatedContainer>
     );
   };
 
