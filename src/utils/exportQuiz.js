@@ -2,9 +2,6 @@
  * Quiz Export Utility
  * 
  * Exports quiz to text format that can be re-imported by the parser.
- * Format:
- * - * prefix marks correct answers for multiple choice
- * - [Đúng]/[Sai] suffix for true/false
  */
 
 /**
@@ -18,28 +15,78 @@ export function exportQuiz(questions, includeAnswers = false) {
   
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i];
+    const qNum = i + 1;
     
-    // Question header
-    lines.push(`Câu ${i + 1}: ${q.question}`);
-    lines.push(''); // Empty line after header
-    
-    if (q.type === 'multiple') {
-      // Export options
+    if (q.type === 'single' || q.type === 'multiple') {
+      const typeLabel = q.type.toUpperCase();
+      lines.push(`[${typeLabel}]`);
+      lines.push(`Câu ${qNum}: ${q.question}`);
       for (const option of q.options) {
         const prefix = includeAnswers && option.correct ? '*' : '';
         lines.push(`${prefix}${option.label}. ${option.text}`);
       }
     }
     
-    if (q.type === 'truefalse-group') {
-      // Export statements
-      for (let j = 0; j < q.statements.length; j++) {
+    else if (q.type === 'true_false') {
+      lines.push('[TRUE_FALSE]');
+      lines.push(`Câu ${qNum}: ${q.question || 'Xác định Đúng/Sai'}`);
+      for (let j = 0; j < (q.statements || []).length; j++) {
         const statement = q.statements[j];
-        const answerMarker = includeAnswers 
-          ? ` [${statement.answer === true ? 'Đúng' : statement.answer === false ? 'Sai' : '?'}]`
+        const answerMarker = includeAnswers && statement.answer !== null
+          ? ` [${statement.answer === true ? 'Đúng' : 'Sai'}]`
           : '';
         lines.push(`${j + 1}. ${statement.text}${answerMarker}`);
       }
+    }
+
+    else if (q.type === 'match') {
+      lines.push('[MATCH]');
+      lines.push(`Câu ${qNum}: ${q.question}`);
+      lines.push('');
+      
+      lines.push('LEFT:');
+      (q.targets || []).forEach(t => {
+        lines.push(`${t.id}|${t.text}`);
+      });
+      lines.push('');
+
+      lines.push('RIGHT:');
+      (q.answerBank || []).forEach(ans => {
+        const distactorTag = ans.distractor ? ' [DISTRACTOR]' : '';
+        lines.push(`${ans.id}|${ans.text}${distactorTag}`);
+      });
+      lines.push('');
+
+      if (includeAnswers && q.correctMatches) {
+        lines.push('CORRECT:');
+        Object.keys(q.correctMatches).forEach(targetId => {
+          const answerIds = q.correctMatches[targetId];
+          if (answerIds && answerIds.length > 0) {
+            lines.push(`${targetId}=>${answerIds.join('|')}`);
+          }
+        });
+      }
+    }
+
+    else if (q.type === 'cloze') {
+      lines.push('[CLOZE]');
+      lines.push(`Câu ${qNum}:`);
+      lines.push('');
+      
+      lines.push('TEXT:');
+      let questionText = '';
+      const segments = q.segments || [];
+      segments.forEach(seg => {
+        if (seg.type === 'text') questionText += seg.content;
+        else if (seg.type === 'blank') {
+          if (includeAnswers) {
+            questionText += `{{${(seg.answers || []).join('|')}}}`;
+          } else {
+            questionText += `{{}}`;
+          }
+        }
+      });
+      lines.push(questionText);
     }
     
     lines.push(''); // Empty line between questions

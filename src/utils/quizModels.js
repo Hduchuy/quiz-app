@@ -51,29 +51,85 @@ export function createStatement({ text, answer = null }) {
 export function createQuestion({ type, question, options = [], statements = [], maxCorrectAnswers = null }) {
   return {
     id: generateId(),
-    type,  // "multiple" or "truefalse-group"
+    type,  // "single", "multiple", "true_false", "match", "cloze"
     question,
     options,
     statements,
-    questionNumber: null,  // Set during parsing
-    maxCorrectAnswers  // null for single-choice, N for multi-choice
+    questionNumber: null,
+    maxCorrectAnswers,
+    targets: [],      
+    answerBank: [],   
+    correctMatches: {}, 
+    segments: [],       
+    fillMode: 'input'
   };
 }
 
 /**
- * Normalize a question to ensure consistent structure
- * Every question MUST have: type, question, options, statements, maxCorrectAnswers
+ * Convert segments to string syntax {{answer}}
  */
+export function stringifySegments(segments = []) {
+  return segments.map(seg => {
+    if (seg.type === 'text') return seg.content || '';
+    if (seg.type === 'blank') return `{{${(seg.answers || []).join('|')}}}`;
+    return '';
+  }).join('');
+}
+
 export function normalizeQuestion(q) {
-  return {
+  const normalized = {
     id: q.id || generateId(),
-    type: q.type || 'multiple',
+    type: q.type || 'single',
     question: q.question || '',
     options: Array.isArray(q.options) ? q.options : [],
     statements: Array.isArray(q.statements) ? q.statements : [],
+    targets: Array.isArray(q.targets) ? q.targets : [],
+    answerBank: Array.isArray(q.answerBank) ? q.answerBank : [],
+    correctMatches: q.correctMatches || {},
+    segments: Array.isArray(q.segments) ? q.segments : [],
+    fillMode: q.fillMode || 'input',
     questionNumber: q.questionNumber || null,
     maxCorrectAnswers: q.maxCorrectAnswers || null
   };
+
+  // Ensure types are standardized
+  if (normalized.type === 'truefalse-group') normalized.type = 'true_false';
+  if (normalized.type === 'dragdrop-match') normalized.type = 'match';
+  if (normalized.type === 'dragdrop-fill') normalized.type = 'cloze';
+
+
+  // Support for cloze syntax {{ }}
+  if (normalized.type === 'cloze') {
+    // If segments exist, ensure question text is in sync for export
+    if (normalized.segments.length > 0) {
+      normalized.question = stringifySegments(normalized.segments);
+    } 
+    // If segments don't exist but question has syntax, parse it (Initial import)
+    else if (normalized.question && normalized.question.includes('{{')) {
+      const segments = [];
+      const parts = normalized.question.split(/(\{\{[^}]+\}\})/g);
+      parts.forEach((part, idx) => {
+        const match = part.match(/^\{\{(.+)\}\}$/);
+        if (match) {
+          const answers = match[1].split('|').map(a => a.trim()).filter(a => a.length > 0);
+          segments.push({
+            type: 'blank',
+            id: `blank_${Date.now()}_${idx}`,
+            answers
+          });
+        } else if (part) {
+          segments.push({
+            type: 'text',
+            content: part
+          });
+        }
+      });
+      normalized.segments = segments;
+    }
+    normalized.fillMode = 'input';
+  }
+
+  return normalized;
 }
 
 /**
@@ -99,26 +155,19 @@ export function parseAnswerKey(text) {
   const answerKey = {};
   
   for (const line of lines) {
-    // Match patterns like:
-    // 1:B or 1. B or 1:B,D or 1:B,D
-    // 28.1:Đúng or 28.1:Đ or 28.1:D or 28.1:True
     const trimmed = line.trim();
     if (!trimmed) continue;
     
-    // Question number (may include .statement for TF)
-    // Format: "1:B" or "1. B" or "1:B,D"
     const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*[:.]\s*(.+)$/i);
     if (match) {
       const key = match[1];
       const value = match[2].trim();
       
-      // Parse the answer value
       if (/^(đúng|đ|d|true|1)$/i.test(value)) {
         answerKey[key] = [true];
       } else if (/^(sai|s|false|0)$/i.test(value)) {
         answerKey[key] = [false];
       } else {
-        // Multiple choice: split by comma
         const letters = value.split(/[,;]/).map(v => v.trim().toUpperCase());
         answerKey[key] = letters;
       }
@@ -130,35 +179,29 @@ export function parseAnswerKey(text) {
 
 /**
  * Apply answer key to questions
- * Sets option.correct and statement.answer based on answer key
  */
 export function applyAnswerKey(questions, answerKey) {
   return questions.map((q, index) => {
     const qNum = String(index + 1);
     
-    if (q.type === 'multiple') {
-      // Find answers for this question (e.g., "1", "1:B", "1:B,C")
+    if (q.type === 'single' || q.type === 'multiple') {
       const answers = answerKey[qNum] || [];
-      
       const newOptions = q.options.map(opt => ({
         ...opt,
         correct: answers.includes(opt.label)
       }));
-      
       return { ...q, options: newOptions };
     }
     
-    if (q.type === 'truefalse-group') {
+    if (q.type === 'true_false') {
       const newStatements = q.statements.map((stmt, sIndex) => {
         const key = `${qNum}.${sIndex + 1}`;
         const answers = answerKey[key];
-        
         if (answers && answers.length > 0) {
           return { ...stmt, answer: answers[0] };
         }
         return stmt;
       });
-      
       return { ...q, statements: newStatements };
     }
     
@@ -171,11 +214,18 @@ export function applyAnswerKey(questions, answerKey) {
  */
 export function hasAnswerKey(questions) {
   return questions.some(q => {
-    if (q.type === 'multiple') {
+    if (q.type === 'single' || q.type === 'multiple') {
       return q.options.some(o => o.correct === true);
     }
-    if (q.type === 'truefalse-group') {
+    if (q.type === 'true_false') {
       return q.statements.some(s => s.answer !== null);
+    }
+    if (q.type === 'match') {
+      return q.targets.length > 0 && Object.keys(q.correctMatches || {}).length > 0;
+    }
+    if (q.type === 'cloze') {
+      const blanks = (q.segments || []).filter(s => s.type === 'blank');
+      return blanks.length > 0 && blanks.every(b => b.answers && b.answers.length > 0);
     }
     return false;
   });
@@ -195,7 +245,6 @@ export function shuffleArray(array) {
 
 /**
  * Regenerate display labels based on current array position
- * This ensures labels show A/B/C/D in display order, not original file order
  */
 function regenerateDisplayLabels(options) {
   const labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -206,35 +255,52 @@ function regenerateDisplayLabels(options) {
 }
 
 /**
- * Prepare quiz - shuffle questions and options
- * - Shuffles question order
- * - Shuffles options within each question (preserving correct flag on option object)
- * - Regenerates display labels (A/B/C/D) based on shuffled positions
- * - Selection is stored by option.id, so scoring remains correct
+ * Prepare quiz with settings
  */
-export function prepareQuiz(questions) {
-  // Shuffle question order
-  const shuffledQuestions = shuffleArray(questions);
+export function prepareQuizWithSettings(questions, settings = {}) {
+  if (!Array.isArray(questions)) return [];
+  const {
+    shuffleQuestions = false,
+    shuffleAnswers = false,
+    shuffleTrueFalse = false,
+    shuffleDragMatch = false
+  } = settings;
 
-  const result = shuffledQuestions.map(q => {
-    if (q.type === 'multiple') {
-      // Shuffle options (correct flag stays attached to each option object)
-      const shuffledOptions = shuffleArray(q.options);
-      // Regenerate labels based on new display order
-      const labeledOptions = regenerateDisplayLabels(shuffledOptions);
+  const clonedQuestions = questions.map(q => ({
+    ...q,
+    options: q.options ? q.options.map(opt => ({ ...opt })) : [],
+    statements: q.statements ? q.statements.map(s => ({ ...s })) : [],
+    targets: q.targets ? q.targets.map(t => ({ ...t })) : [],
+    answerBank: q.answerBank ? q.answerBank.map(a => ({ ...a })) : [],
+    correctMatches: q.correctMatches ? { ...q.correctMatches } : {},
+    segments: q.segments ? q.segments.map(s => ({ ...s, answers: s.answers ? [...s.answers] : [] })) : []
+  }));
+
+  const orderedQuestions = shuffleQuestions
+    ? shuffleArray(clonedQuestions)
+    : clonedQuestions;
+
+  const result = orderedQuestions.map(q => {
+    if (q.type === 'single' || q.type === 'multiple') {
+      const orderedOptions = shuffleAnswers ? shuffleArray(q.options) : q.options;
+      const labeledOptions = regenerateDisplayLabels(orderedOptions);
+      return { ...q, options: labeledOptions };
+    }
+
+    if (q.type === 'true_false') {
+      return { ...q, statements: shuffleTrueFalse ? shuffleArray(q.statements) : q.statements };
+    }
+
+    if (q.type === 'match') {
       return {
         ...q,
-        options: labeledOptions,
-        statements: []
+        targets: shuffleDragMatch ? shuffleArray(q.targets) : q.targets,
+        shuffledAnswers: shuffleAnswers ? shuffleArray(q.answerBank) : q.answerBank
       };
     }
 
-    if (q.type === 'truefalse-group') {
-      return {
-        ...q,
-        options: [],
-        statements: q.statements  // Don't shuffle statements
-      };
+    if (q.type === 'cloze') {
+      return { ...q }; // Cloze uses text input by default in the new format
     }
 
     return q;
@@ -243,126 +309,51 @@ export function prepareQuiz(questions) {
   return result;
 }
 
-/**
- * Re-prepare quiz for restore session
- * Restores the exact shuffled order from the saved session
- * Only regenerates display labels to match current positions
- * This ensures:
- * 1. Options appear in the same order as when the quiz was started
- * 2. Labels (A/B/C/D) are regenerated to match display positions
- * 3. Option IDs remain stable for scoring
- */
 export function reprepareQuiz(editedQuestions, savedShuffledQuestions) {
+  if (!Array.isArray(editedQuestions)) return [];
   if (!savedShuffledQuestions || savedShuffledQuestions.length === 0) {
-    // No saved shuffle data - do fresh shuffle
-    return prepareQuiz(editedQuestions);
+    return prepareQuizWithSettings(editedQuestions);
   }
 
-  // Build a map of question ID -> saved shuffled question
   const savedById = {};
-  savedShuffledQuestions.forEach(q => {
-    savedById[q.id] = q;
-  });
+  savedShuffledQuestions.forEach(q => { savedById[q.id] = q; });
 
-  // Reconstruct shuffled questions using saved order (by ID matching)
   return editedQuestions
     .map(q => {
       const savedQ = savedById[q.id];
       if (!savedQ) return null;
 
-      if (q.type === 'multiple') {
-        // Match options by ID to preserve the shuffled order
-        const savedOptionsById = {};
-        savedQ.options?.forEach(opt => {
-          savedOptionsById[opt.id] = opt;
-        });
-
-        // Reconstruct options in saved order, matching by ID
+      if (q.type === 'single' || q.type === 'multiple') {
         const restoredOptions = savedQ.options
-          .map(savedOpt => {
-            const currentOpt = q.options.find(o => o.id === savedOpt.id);
-            return currentOpt ? { ...currentOpt } : null;
-          })
+          .map(savedOpt => q.options.find(o => o.id === savedOpt.id))
           .filter(Boolean);
-
-        // Regenerate labels based on restored display order
         const labeledOptions = regenerateDisplayLabels(restoredOptions);
+        return { ...q, options: labeledOptions };
+      }
 
+      if (q.type === 'true_false') {
+        const restoredStatements = savedQ.statements
+          ? savedQ.statements.map(savedStmt => q.statements.find(s => s.id === savedStmt.id)).filter(Boolean)
+          : q.statements;
+        return { ...q, statements: restoredStatements.length === q.statements.length ? restoredStatements : q.statements };
+      }
+
+      if (q.type === 'match') {
         return {
           ...q,
-          options: labeledOptions,
-          statements: []
+          targets: savedQ.targets || q.targets,
+          shuffledAnswers: savedQ.shuffledAnswers || q.answerBank
         };
       }
 
-      if (q.type === 'truefalse-group') {
+      if (q.type === 'cloze') {
         return {
           ...q,
-          options: [],
-          statements: q.statements  // Statements are not shuffled
+          segments: savedQ.segments || q.segments
         };
       }
 
       return q;
     })
     .filter(Boolean);
-}
-
-/**
- * Prepare quiz with settings - applies shuffle based on configuration
- * Does NOT mutate original questions - returns a new array
- *
- * @param {Array} questions - Original questions array (not mutated)
- * @param {Object} settings - Quiz settings object
- * @param {boolean} settings.shuffleQuestions - Randomize question order
- * @param {boolean} settings.shuffleAnswers - Randomize answer order within questions
- * @returns {Array} New questions array with shuffle applied
- */
-export function prepareQuizWithSettings(questions, settings = {}) {
-  const {
-    shuffleQuestions = false,
-    shuffleAnswers = false
-  } = settings;
-
-  // Clone questions to avoid mutation
-  const clonedQuestions = questions.map(q => ({
-    ...q,
-    options: q.options ? q.options.map(opt => ({ ...opt })) : [],
-    statements: q.statements ? q.statements.map(s => ({ ...s })) : []
-  }));
-
-  // Optionally shuffle question order
-  const orderedQuestions = shuffleQuestions
-    ? shuffleArray(clonedQuestions)
-    : clonedQuestions;
-
-  const result = orderedQuestions.map(q => {
-    if (q.type === 'multiple') {
-      // Optionally shuffle options
-      const orderedOptions = shuffleAnswers
-        ? shuffleArray(q.options)
-        : q.options;
-
-      // Regenerate labels based on display order
-      const labeledOptions = regenerateDisplayLabels(orderedOptions);
-
-      return {
-        ...q,
-        options: labeledOptions,
-        statements: []
-      };
-    }
-
-    if (q.type === 'truefalse-group') {
-      return {
-        ...q,
-        options: [],
-        statements: q.statements  // Don't shuffle statements
-      };
-    }
-
-    return q;
-  });
-
-  return result;
 }

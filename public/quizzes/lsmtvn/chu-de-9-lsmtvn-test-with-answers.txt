@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Ảnh hưởng của văn hóa Trung Quốc đến nghệ thuật in ấn Việt Nam thể hiện rõ nhất qua yếu tố nào?
 
 A. Sử dụng giấy làm từ vỏ cây mía
@@ -207,3 +208,4 @@ Câu 30: Trong kỹ thuật khắc kim loại, loại chất liệu nào thườ
 B. Đá
 C. Gỗ
 D. Giấy
+

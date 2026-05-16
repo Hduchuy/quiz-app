@@ -11,6 +11,9 @@ export function QuizLayout({
   children,
   sidebar,
   header,
+  footer,
+  mobileNav,
+  mobileSheet,
   className = ''
 }) {
   return (
@@ -27,11 +30,34 @@ export function QuizLayout({
           {sidebar}
         </aside>
         
-        {/* Main Content */}
-        <main className="quiz-main">
-          {children}
-        </main>
+        {/* Main Content Area */}
+        <div className="quiz-main-wrapper">
+          <main className="quiz-main-content">
+            <div className="quiz-content-scroll-area">
+              {children}
+            </div>
+          </main>
+          
+          {/* Fixed Footer Areas */}
+          {footer && (
+            <div className="quiz-footer-desktop desktop-only">
+              {footer}
+            </div>
+          )}
+          
+          {mobileNav && (
+            <div className="quiz-footer-mobile mobile-only">
+              {mobileNav}
+            </div>
+          )}
+        </div>
       </div>
+      
+      {mobileSheet && (
+        <div className="quiz-mobile-sheet-container mobile-only">
+          {mobileSheet}
+        </div>
+      )}
     </div>
   );
 }
@@ -202,30 +228,47 @@ export function MobileQuestionSheet({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           >
-            <div className="mobile-question-grid">
-              {Array.from({ length: totalQuestions }, (_, i) => {
-                const isCurrent = i === currentQuestion;
-                const isAnswered = answeredQuestions.has(i);
-                
-                return (
-                  <motion.button
-                    key={i}
-                    onClick={() => {
-                      onNavigate(i);
-                      onToggle();
-                    }}
-                    className={`
-                      question-grid-item
-                      ${isCurrent ? 'question-grid-item-current' : ''}
-                      ${isAnswered && !isCurrent ? 'question-grid-item-answered' : ''}
-                      ${!isAnswered && !isCurrent ? 'question-grid-item-unanswered' : ''}
-                    `}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    {i + 1}
-                  </motion.button>
-                );
-              })}
+            <div className="mobile-question-sheet-legend">
+              <div className="mobile-legend-item">
+                <span className="mobile-legend-dot current"></span>
+                <span>Đang làm</span>
+              </div>
+              <div className="mobile-legend-item">
+                <span className="mobile-legend-dot answered"></span>
+                <span>Đã làm</span>
+              </div>
+              <div className="mobile-legend-item">
+                <span className="mobile-legend-dot unanswered"></span>
+                <span>Chưa làm</span>
+              </div>
+            </div>
+
+            <div className="mobile-question-grid-container">
+              <div className="mobile-question-grid">
+                {Array.from({ length: totalQuestions }, (_, i) => {
+                  const isCurrent = i === currentQuestion;
+                  const isAnswered = answeredQuestions.has(i);
+                  
+                  return (
+                    <motion.button
+                      key={i}
+                      onClick={() => {
+                        onNavigate(i);
+                        onToggle();
+                      }}
+                      className={`
+                        question-grid-item
+                        ${isCurrent ? 'question-grid-item-current' : ''}
+                        ${isAnswered && !isCurrent ? 'question-grid-item-answered' : ''}
+                        ${!isAnswered && !isCurrent ? 'question-grid-item-unanswered' : ''}
+                      `}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {i + 1}
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         )}

@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Ảnh hưởng của đạo Phật đến kiến trúc Nhật Bản thể hiện rõ nhất qua công trình nào?
 
 *A. Chùa Horyuji
@@ -207,3 +208,4 @@ A. Để bảo vệ khỏi cuộc xâm lược của người Mông Cổ, xây d
 *B. Để bảo vệ khỏi cuộc xâm lược của người Mông Cổ, xây dựng bởi nhà Tần.
 C. Để bảo vệ khỏi cuộc xâm lược của người Nhật Bản, xây dựng bởi nhà Minh.
 D. Để bảo vệ khỏi cuộc xâm lược của người Mông Cổ, xây dựng bởi nhà Minh.
+

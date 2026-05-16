@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Ai là người tiên phong trong trường phái Lập thể?
 
 A. Vincent Van Gogh (Van – Gốc)
@@ -249,3 +250,4 @@ A. Vì chúng dựa vào các câu chuyện cổ tích
 B. Vì chúng tập trung vào kỹ thuật chụp ảnh hiện đại
 C. Vì chúng tập trung vào chính trị
 *D. Vì chúng nhấn mạnh đến cảm xúc và ánh sáng
+

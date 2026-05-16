@@ -16,6 +16,9 @@
 export const DEFAULT_SETTINGS = {
   shuffleQuestions: false,
   shuffleAnswers: false,
+  shuffleTrueFalse: false,
+  shuffleDragMatch: false,
+  shuffleDragFill: false,
   showAnswerInstantly: false
 };
 
@@ -30,6 +33,9 @@ export function normalizeSettings(settings) {
   return {
     shuffleQuestions: Boolean(settings.shuffleQuestions),
     shuffleAnswers: Boolean(settings.shuffleAnswers),
+    shuffleTrueFalse: Boolean(settings.shuffleTrueFalse),
+    shuffleDragMatch: Boolean(settings.shuffleDragMatch),
+    shuffleDragFill: Boolean(settings.shuffleDragFill),
     showAnswerInstantly: Boolean(settings.showAnswerInstantly)
   };
 }

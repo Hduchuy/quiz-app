@@ -1,4 +1,63 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+/**
+ * ErrorBoundary - Catch and display fallback UI for component crashes
+ */
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] m-4">
+          <div className="w-16 h-16 bg-[var(--color-error)]/20 text-[var(--color-error)] rounded-full flex items-center justify-center mb-4">
+             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+             </svg>
+          </div>
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Đã xảy ra lỗi</h2>
+          <p className="text-[var(--color-text-muted)] mb-4">Không thể hiển thị nội dung này do lỗi hệ thống.</p>
+          
+          {import.meta.env.DEV && this.state.error && (
+            <div className="w-full max-w-2xl mt-4 p-4 bg-black/40 rounded-xl text-left overflow-auto max-h-[300px]">
+              <div className="text-[var(--color-error)] font-mono text-sm mb-2 font-bold">
+                {this.state.error.toString()}
+              </div>
+              <pre className="text-[var(--color-text-muted)] font-mono text-[10px] leading-tight">
+                {this.state.error.stack}
+              </pre>
+            </div>
+          )}
+
+          <button 
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="btn-action btn-primary px-6 py-2 rounded-xl mt-6"
+          >
+            Tải lại trang
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children; 
+  }
+}
+
 
 /**
  * GlassCard - Modern glassmorphism card component
@@ -271,14 +330,17 @@ export function SettingsButton({ settings, onChange }) {
 
   const settingsItems = [
     { key: 'shuffleQuestions', label: 'Xáo trộn câu hỏi' },
-    { key: 'shuffleAnswers', label: 'Xáo trộn đáp án' },
+    { key: 'shuffleAnswers', label: 'Tráo đáp án trắc nghiệm' },
+    { key: 'shuffleTrueFalse', label: 'Tráo thứ tự mệnh đề đúng/sai' },
+    { key: 'shuffleDragMatch', label: 'Tráo vị trí ô kéo thả' },
+    { key: 'shuffleDragFill', label: 'Tráo vị trí ô trống điền khuyết' },
     { key: 'showAnswerInstantly', label: 'Hiện đáp án ngay' }
   ];
 
   return (
     <div className="settings-dropdown">
       {settingsItems.map(({ key, label }) => (
-        <label key={key} className="settings-option">
+        <label key={key} className="settings-option group">
           <span className="settings-option-label">{label}</span>
           <div className={`toggle ${normalized[key] ? 'active' : ''}`}>
             <input

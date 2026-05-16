@@ -1,5 +1,9 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AnswerOption, AnswerOptionMulti, TrueFalseOption, AnswerFeedback } from './AnswerOption';
+import { DragDropMatch } from './DragDropMatch';
+import { DragDropFill } from './DragDropFill';
+import { Button } from '../ui';
 
 /**
  * QuizCard - Main question card component
@@ -14,23 +18,26 @@ export function QuizCard({
   showHelper = true,
   onSelectOption,
   onToggleOption,
-  onSelectStatement
+  onSelectStatement,
+  onSelectDragDrop
 }) {
+  const [showAnswers, setShowAnswers] = useState(false);
+
+  if (!question) return null;
+
   // Determine if this is a multi-select question
-  const isMultiSelect = isMultiSelectProp || (question.type === 'multiple' && (
-    (question.maxCorrectAnswers && question.maxCorrectAnswers > 1) ||
-    (question.options || []).filter(o => o.correct).length > 1
-  ));
+  const isMultiSelect = isMultiSelectProp || (question?.type === 'multiple');
 
   // Calculate required and selected counts for multi-select
-  const requiredAnswers = question.maxCorrectAnswers ||
-    (question.options || []).filter(o => o.correct).length;
+  const requiredAnswers = question?.maxCorrectAnswers ||
+    (question?.options || []).filter(o => o?.correct).length;
   const selectedCount = Array.isArray(selectedAnswer) ? selectedAnswer.length : 0;
   const showRequiredBadge = isMultiSelect && requiredAnswers >= 2;
   const showSelectionCounter = showRequiredBadge && selectedCount > 0 && selectedCount < requiredAnswers && !showResult;
 
   const isSelectedCorrect = () => {
-    if (!showResult || !isMultiSelect) {
+    if (!showResult) return false;
+    if (question.type === 'single') {
       const selectedOpt = (question.options || []).find(o => o.id === selectedAnswer);
       return selectedOpt?.correct === true;
     }
@@ -52,25 +59,40 @@ export function QuizCard({
       className="quiz-card"
     >
       {/* Question Header */}
-      <div className="quiz-card-header">
-        <span className="quiz-card-number">
-          {questionIndex + 1}
-        </span>
-        <div className="quiz-card-info">
-          <span className="quiz-card-meta">
-            Câu hỏi {questionIndex + 1} / {totalQuestions}
+      <div className="quiz-card-header flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <span className="quiz-card-number">
+            {questionIndex + 1}
           </span>
-          {showRequiredBadge && !showSelectionCounter && (
-            <span className="quiz-card-badge quiz-card-badge-multi">
-              Chọn {requiredAnswers} đáp án
+          <div className="quiz-card-info">
+            <span className="quiz-card-meta">
+              Câu hỏi {questionIndex + 1} / {totalQuestions}
             </span>
-          )}
-          {showSelectionCounter && (
-            <span className="quiz-card-badge quiz-card-badge-progress">
-              Đã chọn {selectedCount}/{requiredAnswers}
-            </span>
-          )}
+            {showRequiredBadge && !showSelectionCounter && (
+              <span className="quiz-card-badge quiz-card-badge-multi">
+                Chọn {requiredAnswers} đáp án
+              </span>
+            )}
+            {showSelectionCounter && (
+              <span className="quiz-card-badge quiz-card-badge-progress">
+                Đã chọn {selectedCount}/{requiredAnswers}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* New "Show Answer" button for MATCH questions */}
+        {question.type === 'match' && !showResult && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowAnswers(!showAnswers)}
+            className="show-answer-btn h-9 px-3 text-xs sm:text-sm font-semibold"
+          >
+            <span className="hidden sm:inline">{showAnswers ? 'Ẩn đáp án' : 'Hiển thị đáp án'}</span>
+            <span className="sm:hidden">{showAnswers ? 'Ẩn' : 'Đáp án'}</span>
+          </Button>
+        )}
       </div>
 
       {/* Question Text */}
@@ -79,11 +101,11 @@ export function QuizCard({
       </h2>
 
       {/* Answer Options */}
-      {question.type === 'multiple' && (
+      {(question.type === 'single' || question.type === 'multiple') && (
         <>
           <div className="quiz-card-answers">
             {(question.options || []).map((option, idx) => {
-              if (isMultiSelect) {
+              if (question.type === 'multiple') {
                 const selectedIds = Array.isArray(selectedAnswer) ? selectedAnswer : [];
                 const isSelected = selectedIds.includes(option.id);
                 const isCorrectOption = option.correct;
@@ -142,7 +164,7 @@ export function QuizCard({
       )}
 
       {/* True/False Statements */}
-      {question.type === 'truefalse-group' && (
+      {question.type === 'true_false' && (
         <>
           <div className="quiz-card-answers">
             {(question.statements || []).map((statement, idx) => (
@@ -173,6 +195,29 @@ export function QuizCard({
             return null;
           })()}
         </>
+      )}
+
+      {/* Drag and Drop Match */}
+      {question.type === 'match' && (
+        <DragDropMatch
+          question={question}
+          userAnswers={selectedAnswer}
+          onSelectMatching={onSelectDragDrop}
+          showResult={showResult || showAnswers}
+          disabled={showResult || showAnswers}
+          showAnswers={showAnswers}
+        />
+      )}
+
+      {/* Cloze / Fill in the blank */}
+      {question.type === 'cloze' && (
+        <DragDropFill
+          question={question}
+          userAnswers={selectedAnswer}
+          onSelectMatching={onSelectDragDrop}
+          showResult={showResult}
+          disabled={showResult}
+        />
       )}
     </motion.div>
   );

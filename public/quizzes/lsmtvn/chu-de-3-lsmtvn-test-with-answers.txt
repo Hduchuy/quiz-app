@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Bối cảnh chính trị Việt Nam giai đoạn 1945 đến 1954 được cho là?
 
 A. Tiến hành kháng chiến chống Mỹ
@@ -242,3 +243,4 @@ Câu 35: Việc nghệ nhân lúc đó nhận Huy chương đồng cho thấy đ
 B. Chỉ những sản phẩm công nghiệp hiện đại mới được giải thưởng
 C. Các nghệ nhân không được trực tiếp tham gia triển lãm
 D. Sản phẩm Việt Nam không được công chúng quan tâm
+

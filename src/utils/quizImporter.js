@@ -26,12 +26,6 @@ export async function importQuizFromText(rawText) {
     .replace(/\r/g, '\n')
     .trim();
 
-  // Validate content
-  if (!text.includes('Câu')) {
-    console.warn('[importQuizFromText] No "Câu" pattern found in text');
-    return [];
-  }
-
   // Parse questions
   const questions = parseQuestions(text);
 

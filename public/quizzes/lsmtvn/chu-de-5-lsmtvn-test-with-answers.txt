@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Ảnh hưởng của Botticelli đối với hội họa Phục Hưng được biểu hiện qua tác phẩm nào?
 
 A. "Mùa xuân"
@@ -193,3 +194,4 @@ A. Vẻ đẹp của thiên nhiên
 *B. Ảnh hưởng sâu sắc của thần thoại Hy Lạp đối với nghệ thuật Phục Hưng.
 C. Sự thật về khoa học
 D. Tính chất đạo đức
+

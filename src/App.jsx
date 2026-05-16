@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadQuiz } from './utils/questionParser';
 import { importQuizFromText } from './utils/quizImporter';
@@ -25,7 +27,8 @@ import {
   ProgressBar,
   AnimatedContainer,
   Button,
-  Badge
+  Badge,
+  ErrorBoundary
 } from './components/ui';
 import { QuizCard } from './components/quiz/QuizCard';
 import { ScoreCard, ResultItem } from './components/quiz/Results';
@@ -60,25 +63,390 @@ import './components/quiz/QuizLayout.css';
 import './App.css';
 
 // ============================================================================
+// FormatGuide - Detailed documentation
+// ============================================================================
+function FormatGuide({ onBack }) {
+  const sections = [
+    {
+      title: "1. Trắc nghiệm (SINGLE/MULTIPLE)",
+      icon: "🎯",
+      content: `[SINGLE]
+Câu 1: Thủ đô của Việt Nam là gì?
+A. Hải Phòng
+*B. Hà Nội
+C. Đà Nẵng
+
+[MULTIPLE]
+Câu 2: Các hành tinh nào thuộc hệ Mặt Trời?
+*A. Trái Đất
+*B. Sao Hỏa
+C. Mặt Trăng
+*D. Sao Mộc`
+    },
+    {
+      title: "2. Đúng / Sai (TRUE_FALSE)",
+      icon: "⚖️",
+      content: `[TRUE_FALSE]
+Câu 3: Kiến thức tổng hợp
+1. Mặt trời mọc ở hướng Đông. [Đúng]
+2. Cá voi là loài cá. [Sai]
+3. Con người cần Oxy để sống. [Đúng]`
+    },
+    {
+      title: "3. Ghép nối (MATCH)",
+      icon: "🧩",
+      content: `[MATCH]
+Ghép nội dung phù hợp
+
+LEFT:
+1|Triết học Mác
+2|Kinh tế chính trị Mác
+3|Chủ nghĩa xã hội khoa học
+
+RIGHT:
+A|Giá trị thặng dư
+B|Đấu tranh giai cấp
+C|Thế giới quan khoa học
+D|Phương pháp luận
+
+CORRECT:
+1=C,D
+2=A
+3=B`
+    },
+    {
+      title: "4. Điền khuyết (CLOZE)",
+      icon: "✏️",
+      content: `[CLOZE]
+TEXT:
+Hà Nội là thủ đô của {{Việt Nam}} và nằm ở miền {{Bắc|miền Bắc}}.`
+    }
+  ];
+
+  return (
+    <AnimatedContainer>
+      <div className="min-h-screen p-4 lg:p-8 max-w-5xl mx-auto flex flex-col gap-6">
+        <header className="flex items-center gap-4">
+          <Button variant="secondary" size="sm" onClick={onBack}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại
+          </Button>
+          <h1 className="text-2xl font-bold text-gradient">Hướng dẫn Format chuẩn</h1>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {sections.map((s, idx) => (
+            <GlassCard key={idx} padding="p-6" className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{s.icon}</span>
+                <h3 className="font-bold text-[var(--color-text-primary)]">{s.title}</h3>
+              </div>
+              <div className="relative group">
+                <pre className="text-xs font-mono bg-[var(--color-bg-primary)] p-4 rounded-xl border border-[var(--color-border)] overflow-x-auto text-[var(--color-text-muted)] leading-relaxed">
+                  {s.content}
+                </pre>
+                <button 
+                  className="absolute top-2 right-2 p-2 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => {
+                    navigator.clipboard.writeText(s.content);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </button>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+
+        <div className="p-6 rounded-2xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10 text-center">
+          <p className="text-[var(--color-text-secondary)] italic">
+            💡 Mẹo: Bạn có thể copy các mẫu trên vào file Word (.docx) hoặc Text (.txt) để upload trực tiếp.
+          </p>
+        </div>
+      </div>
+    </AnimatedContainer>
+  );
+}
+
+// ============================================================================
+// AIFormatGuide - AI Integration instructions
+// ============================================================================
+function AIFormatGuide({ onBack }) {
+  return (
+    <AnimatedContainer>
+      <div className="min-h-screen p-4 lg:p-8 max-w-4xl mx-auto flex flex-col gap-8">
+        <header className="flex items-center gap-4">
+          <Button variant="secondary" size="sm" onClick={onBack}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại
+          </Button>
+          <h1 className="text-2xl font-bold text-gradient">AI Format Rules</h1>
+        </header>
+
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <GlassCard padding="p-6 lg:p-10" className="space-y-8 max-w-none">
+            <div className="flex items-center gap-4 text-cyan-400 border-b border-[var(--color-border)] pb-6">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-400/10 flex items-center justify-center text-3xl shadow-inner">🤖</div>
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Quy tắc cho AI</h2>
+                <p className="text-sm text-[var(--color-text-muted)] font-medium">Dành cho việc viết Prompt hoặc tích hợp API</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Nội dung Prompt chuẩn</span>
+                <Button 
+                  variant="secondary" 
+                  size="xs" 
+                  onClick={() => {
+                    const text = document.getElementById('ai-prompt-text').innerText;
+                    navigator.clipboard.writeText(text);
+                  }}
+                  className="text-[10px] h-7 px-3"
+                >
+                  Sao chép toàn bộ
+                </Button>
+              </div>
+              
+              <div 
+                id="ai-prompt-text"
+                className="bg-black/30 p-6 lg:p-8 rounded-2xl border border-[var(--color-border)] font-sans text-sm lg:text-base leading-relaxed text-cyan-50/90 whitespace-pre-wrap select-text selection:bg-cyan-500/30"
+              >
+{`Bạn là AI chuyển đổi đề bài sang format chuẩn cho Quiz App.
+Nhiệm vụ của bạn là đọc toàn bộ nội dung file người dùng tải lên (.docx hoặc .txt), tự động hiểu loại câu hỏi mà người dùng đang sử dụng, sau đó CHUYỂN ĐỔI và CHUẨN HÓA toàn bộ về đúng format quy định dưới đây.
+
+YÊU CẦU QUAN TRỌNG:
+
+* Không được bỏ sót câu hỏi.
+* Không tự ý thay đổi nội dung kiến thức.
+* Chỉ chuẩn hóa cấu trúc và định dạng.
+* Nếu đề bài lẫn nhiều loại câu hỏi khác nhau thì phải tự nhận diện và format đúng từng loại.
+* Nếu phát hiện format cũ, format tự do, OCR lỗi nhẹ, ký hiệu khác nhau (A), A., A:, A -, ✓, x, True/False, Đúng/Sai...) thì phải tự hiểu và chuyển sang chuẩn mới.
+* Xuất kết quả cuối cùng dưới dạng plain text sạch, không markdown code block.
+
+==================================================
+QUY ĐỊNH FORMAT QUIZ APP MỚI NHẤT
+=================================
+
+1. QUY TẮC CHUNG
+
+* Mỗi câu hỏi bắt buộc bắt đầu bằng:
+  [SINGLE]
+  [MULTIPLE]
+  [TRUE_FALSE]
+  [MATCH]
+  [CLOZE]
+
+* Có thể thêm dòng trống giữa các câu hỏi.
+
+* Không thêm giải thích ngoài nội dung đề.
+
+==================================================
+2. CÁC ĐỊNH DẠNG CÂU HỎI
+========================
+
+---
+
+## A. SINGLE — Chọn 1 đáp án
+
+Quy tắc:
+
+* Chỉ có 1 đáp án đúng.
+* Đáp án đúng thêm dấu * ngay đầu dòng.
+* Đáp án bắt đầu bằng A., B., C., D....
+
+Ví dụ chuẩn:
+
+[SINGLE]
+Thủ đô của Việt Nam là gì?
+*A. Hà Nội
+B. TP. Hồ Chí Minh
+C. Đà Nẵng
+
+---
+
+## B. MULTIPLE — Chọn nhiều đáp án
+
+Quy tắc:
+
+* Có nhiều đáp án đúng.
+* Mỗi đáp án đúng đều thêm dấu *.
+
+Ví dụ chuẩn:
+
+[MULTIPLE]
+Những số nào là số chẵn?
+*A. 2
+*B. 4
+C. 5
+*D. 8
+
+---
+
+## C. TRUE_FALSE — Đúng/Sai
+
+Quy tắc:
+
+* Mỗi dòng là một mệnh đề.
+
+* Cuối dòng phải có:
+  [Đúng]
+  hoặc
+  [Sai]
+
+* Chấp nhận chuyển đổi từ:
+  [True]/[False]
+  Đúng/Sai
+  ✓/✗
+  Yes/No
+  và các biến thể tương tự.
+
+Ví dụ chuẩn:
+
+[TRUE_FALSE]
+Kiểm tra kiến thức:
+
+1. Trái đất hình tròn [Đúng]
+2. Mặt trời quay quanh Trái đất [Sai]
+
+---
+
+## D. MATCH — Ghép nối
+
+Bắt buộc gồm 4 phần:
+
+LEFT:
+RIGHT:
+CORRECT:
+DISTRACTOR: (không bắt buộc)
+
+Quy tắc:
+
+* LEFT chứa danh sách bên trái.
+* RIGHT chứa danh sách bên phải.
+* CORRECT định nghĩa cặp đúng.
+* DISTRACTOR là đáp án nhiễu.
+
+Ví dụ chuẩn:
+
+[MATCH]
+Hãy nối quốc gia với thủ đô:
+
+LEFT:
+1 : Việt Nam
+2 : Nhật Bản
+
+RIGHT:
+A : Hà Nội
+B : Tokyo
+
+CORRECT:
+1 => A
+2 => B
+
+DISTRACTOR:
+X : Bangkok
+
+---
+
+## E. CLOZE — Điền khuyết
+
+Quy tắc:
+
+* Phải có nhãn:
+  TEXT:
+
+* Từ cần điền nằm trong:
+  {{ }}
+
+* Nhiều đáp án đúng dùng dấu:
+  |
+
+Ví dụ chuẩn:
+
+[CLOZE]
+TEXT:
+Hà Nội là thủ đô của {{Việt Nam}} và nằm ở miền {{Bắc|miền Bắc}}.
+
+==================================================
+3. QUY TẮC TỰ NHẬN DIỆN LOẠI CÂU HỎI
+====================================
+
+* Nếu câu có radio/chỉ 1 đáp án đúng → [SINGLE]
+* Nếu nhiều đáp án đúng → [MULTIPLE]
+* Nếu là các mệnh đề đúng sai → [TRUE_FALSE]
+* Nếu là nối cột A-B → [MATCH]
+* Nếu có chỗ trống cần điền → [CLOZE]
+
+==================================================
+4. QUY TẮC CHUẨN HÓA
+====================
+
+* Xóa các tiền tố như:
+  "Câu 1:"
+  "Question 1:"
+  "Bài 1:"
+  nếu không cần thiết.
+
+* Chuẩn hóa đáp án:
+  A)
+  A:
+  A -
+  => A.
+
+* Dấu * phải dính sát:
+
+- A. ❌
+  *A. ✅
+
+* Không giữ numbering thừa nếu không cần.
+
+* Với CLOZE:
+
+---
+
+……
+( )
+=> chuyển thành:
+{{đáp án}}
+
+==================================================
+5. OUTPUT CUỐI CÙNG
+===================
+
+* Chỉ trả về nội dung đã format chuẩn.
+* Không thêm giải thích.
+* Không thêm markdown.
+* Không thêm nhận xét.
+* Không thêm tiêu đề ngoài format quy định.`}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+    </AnimatedContainer>
+  );
+}
+
+// ============================================================================
 // FeatureCard - Small feature highlight card
 // ============================================================================
 function FeatureCard({ icon, title, description }) {
   return (
-    <motion.div
-      className="p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]"
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-    >
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent-light)] flex-shrink-0">
-          {icon}
-        </div>
-        <div>
-          <div className="font-semibold text-sm text-[var(--color-text-primary)]">{title}</div>
-          <div className="text-xs text-[var(--color-text-muted)] mt-0.5">{description}</div>
-        </div>
+    <div className="p-3 lg:p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/30 transition-all duration-200 group">
+      <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center text-[var(--color-accent-light)] mb-3 group-hover:scale-110 transition-transform">
+        {icon}
       </div>
-    </motion.div>
+      <div className="font-bold text-sm text-[var(--color-text-primary)] mb-1">{title}</div>
+      <div className="text-xs text-[var(--color-text-muted)] line-clamp-1">{description}</div>
+    </div>
   );
 }
 
@@ -93,12 +461,14 @@ function App() {
   const [showRestoreModal, setShowRestoreModal] = useState(savedSession !== null);
   const [restoreData, setRestoreData] = useState(savedSession);
   
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [questions, setQuestions] = useState([]);
   const [editedQuestions, setEditedQuestions] = useState([]);
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [gameState, setGameState] = useState('upload');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
@@ -136,7 +506,7 @@ function App() {
         editedQuestions
       },
       quizState: {
-        mode: gameState,
+        mode: location.pathname,
         shuffledQuestions,
         currentQuestionIndex,
         selectedAnswers,
@@ -157,12 +527,34 @@ function App() {
     shuffledQuestions,
     currentQuestionIndex,
     selectedAnswers,
-    gameState,
+    location.pathname,
     questionFileName,
     answerKeyFileName,
     quizSettings,
     showRestoreModal
   ]);
+
+  // ==========================================================================
+  // URL Validation effect
+  // ==========================================================================
+  useEffect(() => {
+    if (!showRestoreModal && !libraryState.show && location.pathname !== '/') {
+      // Allow editor to be empty if we are explicitly creating a new one
+      if (location.pathname === '/editor' && (location.state?.createNew || questionFileName === 'Đề mới')) {
+        return;
+      }
+      
+      // If we are in quiz or result mode, we must have questions to show
+      const hasData = (questions || []).length > 0 || 
+                      (editedQuestions || []).length > 0 || 
+                      (shuffledQuestions || []).length > 0;
+
+      if (!hasData) {
+        console.warn(`[Route Protection] No quiz data found for ${location.pathname}, redirecting to home.`);
+        navigate('/');
+      }
+    }
+  }, [location.pathname, questions, editedQuestions, shuffledQuestions, showRestoreModal, libraryState.show, navigate, location.state, questionFileName]);
 
   // ==========================================================================
   // Restore session handlers
@@ -184,8 +576,11 @@ function App() {
       setSelectedAnswers(restored.selectedAnswers);
       setQuestionFileName(restored.questionFileName);
       setAnswerKeyFileName(restored.answerKeyFileName);
-      setGameState(restored.mode);
       setQuizSettings(restored.quizSettings || DEFAULT_SETTINGS);
+      
+      const mode = restored.mode || '/';
+      const path = mode === 'upload' ? '/' : (mode === 'review' ? '/editor' : (mode === 'playing' ? '/quiz' : (mode === 'results' ? '/result' : mode)));
+      navigate(path);
     }
 
     setShowRestoreModal(false);
@@ -249,24 +644,23 @@ function App() {
         const answerKeyText = await answerKeyFile.text();
         const answerKey = parseAnswerKey(answerKeyText);
         parsedQuestions = parsedQuestions.map((q, idx) => {
-          if (q.type === 'multiple') {
+          if (q.type === 'single' || q.type === 'multiple') {
             const key = String(idx + 1);
             const answers = answerKey[key] || [];
             return {
               ...q,
-              maxCorrectAnswers: q.maxCorrectAnswers,
               options: (q.options || []).map(o => ({
                 ...o,
                 correct: answers.includes(o.label)
               }))
             };
           }
-          if (q.type === 'truefalse-group') {
+          if (q.type === 'true_false') {
             return {
               ...q,
               statements: (q.statements || []).map((s, sIdx) => ({
                 ...s,
-                answer: answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] ?? null
+                answer: answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] === 'Đúng' ? true : (answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] === 'Sai' ? false : null)
               }))
             };
           }
@@ -278,7 +672,7 @@ function App() {
       setEditedQuestions(parsedQuestions);
       setQuestionFileName(questionFile.name);
       setAnswerKeyFileName(answerKeyFile?.name || null);
-      setGameState('review');
+      navigate('/editor');
     } catch (err) {
       console.error('Parse error:', err);
       setError('Lỗi khi đọc file: ' + err.message);
@@ -290,17 +684,36 @@ function App() {
   // ==========================================================================
   // Quiz controls
   // ==========================================================================
-  const handleStartQuiz = (settings = DEFAULT_SETTINGS) => {
+  const handleCreateNewQuiz = () => {
+    setQuestions([]);
+    setEditedQuestions([]);
+    setQuestionFileName('Đề mới');
+    setAnswerKeyFileName(null);
+    navigate('/editor', { state: { createNew: true } });
+  };
+
+  const handleStartQuiz = (settings = DEFAULT_SETTINGS, overrideQuestions = null) => {
     const normalizedSettings = normalizeSettings(settings);
-    const prepared = prepareQuizWithSettings(editedQuestions, normalizedSettings);
+    const activeQuestions = overrideQuestions || editedQuestions;
+    
+    console.log("START QUIZ QUESTIONS:", activeQuestions?.length);
+    console.log("OVERRIDE:", !!overrideQuestions);
+
+    if (!activeQuestions || activeQuestions.length === 0) {
+      console.warn('[handleStartQuiz] No questions to start with');
+      return;
+    }
+
+    const prepared = prepareQuizWithSettings(activeQuestions, normalizedSettings);
     setShuffledQuestions(prepared);
     setQuizSettings(normalizedSettings);
     setCurrentQuestionIndex(0);
     setSelectedAnswers({});
-    setGameState('playing');
+    navigate('/quiz');
   };
 
   const handleUpdateQuestions = (updatedQuestions) => {
+    setQuestions(updatedQuestions);
     setEditedQuestions(updatedQuestions);
   };
 
@@ -312,7 +725,7 @@ function App() {
   };
 
   const handleCancelFromReview = () => {
-    setGameState('upload');
+    navigate('/');
   };
 
   // ==========================================================================
@@ -344,7 +757,7 @@ function App() {
       if (quiz.answerKey) {
         const answerKey = parseAnswerKey(quiz.answerKey);
         questions = questions.map((q, idx) => {
-          if (q.type === 'multiple') {
+          if (q.type === 'single' || q.type === 'multiple') {
             const key = String(idx + 1);
             const answers = answerKey[key] || [];
             return {
@@ -355,12 +768,12 @@ function App() {
               }))
             };
           }
-          if (q.type === 'truefalse-group') {
+          if (q.type === 'true_false') {
             return {
               ...q,
               statements: (q.statements || []).map((s, sIdx) => ({
                 ...s,
-                answer: answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] ?? null
+                answer: answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] === 'Đúng' ? true : (answerKey[`${idx + 1}.${sIdx + 1}`]?.[0] === 'Sai' ? false : null)
               }))
             };
           }
@@ -373,7 +786,7 @@ function App() {
       setQuestionFileName(quiz.title || 'Kho đề');
       setAnswerKeyFileName(null);
       setLibraryState({ show: false, subject: null });
-      setGameState('review');
+      navigate('/editor');
     } catch (err) {
       console.error('Library quiz error:', err);
       setError('Lỗi khi tải đề thi: ' + err.message);
@@ -395,7 +808,7 @@ function App() {
     setShuffledQuestions([]);
     setSelectedAnswers({});
     setCurrentQuestionIndex(0);
-    setGameState('upload');
+    navigate('/');
     setError(null);
     setQuestionFileName(null);
     setAnswerKeyFileName(null);
@@ -449,6 +862,40 @@ function App() {
     }));
   }, [currentQuestionIndex]);
 
+
+  const handleSelectDragDrop = useCallback((targetId, answerId) => {
+    setSelectedAnswers(prev => {
+      const q = shuffledQuestions[currentQuestionIndex];
+      const current = prev[currentQuestionIndex] || {};
+      const newAnswers = { ...current };
+
+      if (q.type === 'cloze' && q.fillMode === 'input') {
+        // Direct text input
+        newAnswers[targetId] = answerId;
+      } else {
+        // Remove the dragged answer from wherever it is currently
+        for (const key in newAnswers) {
+          if (Array.isArray(newAnswers[key])) {
+            newAnswers[key] = newAnswers[key].filter(id => id !== answerId);
+          }
+        }
+
+        if (targetId && targetId !== 'pool') {
+          // Add to the new target
+          if (!newAnswers[targetId]) {
+            newAnswers[targetId] = [];
+          }
+          newAnswers[targetId].push(answerId);
+        }
+      }
+
+      return {
+        ...prev,
+        [currentQuestionIndex]: newAnswers
+      };
+    });
+  }, [currentQuestionIndex, shuffledQuestions]);
+
   // ==========================================================================
   // Navigation
   // ==========================================================================
@@ -465,7 +912,7 @@ function App() {
   };
 
   const handleSubmit = () => {
-    setGameState('results');
+    navigate('/result');
   };
 
   // ==========================================================================
@@ -479,37 +926,54 @@ function App() {
     shuffledQuestions.forEach((q, qIndex) => {
       const userAnswer = selectedAnswers[qIndex];
 
-      if (q.type === 'multiple') {
+      if (q.type === 'single' || q.type === 'multiple') {
         if (hasGrading) {
           total++;
-          const correctOptionIds = q.options
-            .filter(o => o.correct)
-            .map(o => o.id);
-
-          if (correctOptionIds.length > 1) {
-            const selectedArray = Array.isArray(userAnswer)
-              ? [...userAnswer].sort()
-              : (userAnswer ? [userAnswer] : []);
-            const correctArray = [...correctOptionIds].sort();
-            if (JSON.stringify(selectedArray) === JSON.stringify(correctArray)) {
-              correct++;
-            }
-          } else {
+          if (q.type === 'single') {
             const selectedOption = q.options.find(o => o.id === userAnswer);
-            if (selectedOption?.correct === true) {
+            if (selectedOption?.correct === true) correct++;
+          } else {
+            const correctOptionIds = q.options.filter(o => o.correct).map(o => o.id);
+            const selectedArray = Array.isArray(userAnswer) ? [...userAnswer].sort() : [];
+            const correctArray = [...correctOptionIds].sort();
+            if (selectedArray.length > 0 && JSON.stringify(selectedArray) === JSON.stringify(correctArray)) {
               correct++;
             }
           }
         }
       }
 
-      if (q.type === 'truefalse-group') {
+      if (q.type === 'true_false') {
         if (hasGrading) {
           total++;
-          const allCorrect = q.statements.every(s => userAnswer?.[s.id] === s.answer);
-          if (allCorrect) {
-            correct++;
-          }
+          const allCorrect = (q.statements || []).every(s => userAnswer?.[s.id] === s.answer);
+          if (allCorrect && (q.statements || []).length > 0) correct++;
+        }
+      }
+
+      if (q.type === 'match') {
+        if (hasGrading) {
+          total++;
+          const matches = q.correctMatches || {};
+          const allCorrect = (q.targets || []).length > 0 && (q.targets || []).every(t => {
+            const userArr = [...(userAnswer?.[t.id] || [])].sort();
+            const correctArr = [...(matches[t.id] || [])].sort();
+            return userArr.length > 0 && JSON.stringify(userArr) === JSON.stringify(correctArr);
+          });
+          if (allCorrect) correct++;
+        }
+      }
+
+      if (q.type === 'cloze') {
+        if (hasGrading) {
+          total++;
+          const blanks = (q.segments || []).filter(seg => seg.type === 'blank');
+          const allCorrect = blanks.length > 0 && blanks.every(b => {
+            const userStr = String(userAnswer?.[b.id] || '').toLowerCase().trim().replace(/\s+/g, ' ');
+            const correctStrs = (b.answers || []).map(a => a.toLowerCase().trim().replace(/\s+/g, ' '));
+            return correctStrs.includes(userStr);
+          });
+          if (allCorrect) correct++;
         }
       }
     });
@@ -525,11 +989,22 @@ function App() {
     if (answer === undefined) return false;
 
     const q = shuffledQuestions[qIndex];
-    if (q.type === 'multiple') {
-      return answer !== undefined;
+    if (q.type === 'single' || q.type === 'multiple') {
+      return answer !== undefined && answer !== null && (q.type === 'single' || (Array.isArray(answer) && answer.length > 0));
     }
-    if (q.type === 'truefalse-group') {
-      return q.statements.every(s => answer?.[s.id] !== undefined);
+    if (q.type === 'true_false') {
+      return (q.statements || []).length > 0 && q.statements.every(s => answer?.[s.id] !== undefined);
+    }
+    if (q.type === 'match') {
+      const mappedCount = Object.values(answer || {}).flat().length;
+      return mappedCount > 0;
+    }
+    if (q.type === 'cloze') {
+      const blanks = (q.segments || []).filter(seg => seg.type === 'blank');
+      return blanks.length > 0 && blanks.every(b => {
+        const val = answer?.[b.id];
+        return typeof val === 'string' && val.trim() !== '';
+      });
     }
     return false;
   }, [selectedAnswers, shuffledQuestions]);
@@ -613,23 +1088,52 @@ function App() {
                 />
               </div>
 
-              {/* Library Button - Desktop */}
-              <motion.button
-                onClick={handleOpenLibrary}
-                className="hidden lg:flex items-center gap-3 mt-8 px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-all duration-200 group w-fit"
-                whileHover={{ x: 5 }}
-              >
-                <svg className="w-6 h-6 text-[var(--color-accent-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <div className="text-left">
-                  <div className="font-semibold text-[var(--color-text-primary)]">Kho đề có sẵn</div>
-                  <div className="text-sm text-[var(--color-text-muted)]">Các bài thi mẫu</div>
-                </div>
-                <svg className="w-5 h-5 text-[var(--color-text-muted)] ml-auto group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.button>
+              {/* Hero Actions - Desktop & Mobile */}
+              <div className="flex flex-col gap-3 mt-8 w-full max-w-md">
+                <motion.button
+                  onClick={() => navigate('/format-guide')}
+                  className="flex items-center gap-4 px-6 py-5 rounded-[24px] bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-accent)]/30 transition-all duration-200 group w-full min-h-[96px]"
+                  whileHover={{ x: 6, backgroundColor: 'var(--color-surface-hover)' }}
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--color-accent)]/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    📘
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-[var(--color-text-primary)]">Xem format câu hỏi</div>
+                    <div className="text-sm text-[var(--color-text-muted)]">Hướng dẫn chuẩn nội dung</div>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => navigate('/ai-format')}
+                  className="flex items-center gap-4 px-6 py-5 rounded-[24px] bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-cyan)]/30 transition-all duration-200 group w-full min-h-[96px]"
+                  whileHover={{ x: 6, backgroundColor: 'var(--color-surface-hover)' }}
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--color-cyan)]/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    🤖
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-[var(--color-text-primary)]">Format AI viết lại</div>
+                    <div className="text-sm text-[var(--color-text-muted)]">Tối ưu đề bằng AI</div>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  onClick={handleOpenLibrary}
+                  className="flex items-center gap-4 px-6 py-5 rounded-[24px] bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/10 hover:border-[var(--color-accent)]/30 transition-all duration-200 group w-full min-h-[96px]"
+                  whileHover={{ x: 6 }}
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent-light)] group-hover:scale-110 transition-transform">
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-lg text-[var(--color-text-primary)]">Kho đề có sẵn</div>
+                    <div className="text-sm text-[var(--color-text-muted)]">Khám phá các bài thi mẫu</div>
+                  </div>
+                </motion.button>
+              </div>
             </motion.div>
           </div>
 
@@ -729,16 +1233,29 @@ function App() {
 
                 {/* Buttons */}
                 <div className="mt-6 space-y-3">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full"
-                    onClick={handleUpload}
-                    loading={isLoading}
-                    disabled={!questionFileName}
-                  >
-                    {isLoading ? 'Đang xử lý...' : 'Tải lên & Kiểm tra'}
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      className="w-full order-2 sm:order-1"
+                      onClick={handleCreateNewQuiz}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      📄 Tạo đề từ đầu
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full order-1 sm:order-2"
+                      onClick={handleUpload}
+                      loading={isLoading}
+                      disabled={!questionFileName}
+                    >
+                      {isLoading ? 'Đang xử lý...' : '📤 Upload file có sẵn'}
+                    </Button>
+                  </div>
 
                   {/* Library Button - Mobile/Tablet */}
                   <Button
@@ -787,20 +1304,25 @@ D. 6`}</pre>
 
   const renderReviewState = () => (
     <AnimatedContainer key="review">
-      <QuizEditor
-        questions={editedQuestions}
-        onUpdate={handleUpdateQuestions}
-        onStartQuiz={handleStartQuiz}
-        onCancel={handleCancelFromReview}
-        onExport={handleExportQuiz}
-        settings={quizSettings}
-        onSettingsChange={setQuizSettings}
-      />
+      <ErrorBoundary>
+        <QuizEditor
+          questions={editedQuestions}
+          onUpdate={handleUpdateQuestions}
+          onStartQuiz={handleStartQuiz}
+          onCancel={handleCancelFromReview}
+          onExport={handleExportQuiz}
+          settings={quizSettings}
+          onSettingsChange={setQuizSettings}
+        />
+      </ErrorBoundary>
     </AnimatedContainer>
   );
 
   const renderPlayingState = () => {
+    if (!shuffledQuestions || shuffledQuestions.length === 0) return null;
     const currentQuestion = shuffledQuestions[currentQuestionIndex];
+    if (!currentQuestion) return null;
+
     const isLastQuestion = currentQuestionIndex === shuffledQuestions.length - 1;
     const isFirstQuestion = currentQuestionIndex === 0;
     const answeredCount = shuffledQuestions.filter((_, i) => isQuestionAnswered(i)).length;
@@ -809,11 +1331,10 @@ D. 6`}</pre>
     const currentAnswer = selectedAnswers[currentQuestionIndex];
 
     // Calculate question type flags
-    const isMultiAnswerQuestion = currentQuestion?.type === 'multiple' && (
-      (currentQuestion.maxCorrectAnswers && currentQuestion.maxCorrectAnswers > 1) ||
-      (currentQuestion.options || []).filter(o => o.correct).length > 1
-    );
-    const isTrueFalseQuestion = currentQuestion?.type === 'truefalse-group';
+    const isMultiAnswerQuestion = currentQuestion?.type === 'multiple';
+    const isTrueFalseQuestion = currentQuestion?.type === 'true_false';
+    const isMatchingQuestion = currentQuestion?.type === 'match';
+    const isClozeQuestion = currentQuestion?.type === 'cloze';
 
     // Helper to count selected answers for multiple choice
     const getMultipleChoiceSelectedCount = (answer) => {
@@ -825,6 +1346,12 @@ D. 6`}</pre>
     const getTrueFalseAnsweredCount = (answer, statements) => {
       if (!statements || statements.length === 0) return 0;
       return statements.filter(s => answer?.[s.id] !== undefined).length;
+    };
+
+    // Helper to count matched targets for drag-and-drop
+    const getMatchingAnsweredCount = (answer, targets) => {
+      if (!targets || targets.length === 0) return 0;
+      return targets.filter(t => answer?.[t.id] !== undefined).length;
     };
 
     // Determine if we should show instant results
@@ -845,6 +1372,12 @@ D. 6`}</pre>
         const totalStatements = (currentQuestion.statements || []).length;
         const answeredStatements = getTrueFalseAnsweredCount(currentAnswer, currentQuestion.statements);
         shouldShowResult = answeredStatements >= totalStatements && totalStatements > 0;
+      } else if (isMatchingQuestion) {
+        // Matching: NEVER show instant results (use Show Answer button instead)
+        shouldShowResult = false;
+      } else if (isClozeQuestion) {
+        // Cloze: NEVER show instant results
+        shouldShowResult = false;
       } else {
         // Single-answer multiple choice: show immediately
         shouldShowResult = true;
@@ -877,6 +1410,40 @@ D. 6`}</pre>
         sidebar={sidebar}
         header={header}
         className="quiz-playing-layout"
+        footer={
+          <BottomNavigation
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onSubmit={handleSubmit}
+            isFirst={isFirstQuestion}
+            isLast={isLastQuestion}
+            canSubmit={allAnswered}
+            submitLabel="Nộp bài"
+          />
+        }
+        mobileNav={
+          <MobileNavigation
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onSubmit={handleSubmit}
+            isFirst={isFirstQuestion}
+            isLast={isLastQuestion}
+            canSubmit={allAnswered}
+            currentQuestion={currentQuestionIndex + 1}
+            totalQuestions={shuffledQuestions.length}
+            submitLabel="Nộp bài"
+          />
+        }
+        mobileSheet={
+          <MobileQuestionSheet
+            totalQuestions={shuffledQuestions.length}
+            currentQuestion={currentQuestionIndex}
+            answeredQuestions={answeredSet}
+            onNavigate={setCurrentQuestionIndex}
+            isExpanded={mobileNavExpanded}
+            onToggle={() => setMobileNavExpanded(!mobileNavExpanded)}
+          />
+        }
       >
         {/* Question Card */}
         <AnimatePresence mode="wait">
@@ -891,42 +1458,9 @@ D. 6`}</pre>
             onSelectOption={handleSelectOption}
             onToggleOption={handleToggleOption}
             onSelectStatement={handleSelectStatement}
+            onSelectDragDrop={handleSelectDragDrop}
           />
         </AnimatePresence>
-
-        {/* Bottom Navigation - Desktop only */}
-        <BottomNavigation
-          onPrev={handlePrev}
-          onNext={handleNext}
-          onSubmit={handleSubmit}
-          isFirst={isFirstQuestion}
-          isLast={isLastQuestion}
-          canSubmit={allAnswered}
-          submitLabel="Nộp bài"
-        />
-
-        {/* Mobile Navigation - Always visible on mobile */}
-        <MobileNavigation
-          onPrev={handlePrev}
-          onNext={handleNext}
-          onSubmit={handleSubmit}
-          isFirst={isFirstQuestion}
-          isLast={isLastQuestion}
-          canSubmit={allAnswered}
-          currentQuestion={currentQuestionIndex + 1}
-          totalQuestions={shuffledQuestions.length}
-          submitLabel="Nộp bài"
-        />
-
-        {/* Mobile Question Navigator Sheet - Expandable */}
-        <MobileQuestionSheet
-          totalQuestions={shuffledQuestions.length}
-          currentQuestion={currentQuestionIndex}
-          answeredQuestions={answeredSet}
-          onNavigate={setCurrentQuestionIndex}
-          isExpanded={mobileNavExpanded}
-          onToggle={() => setMobileNavExpanded(!mobileNavExpanded)}
-        />
       </QuizLayout>
     );
   };
@@ -947,12 +1481,12 @@ D. 6`}</pre>
 
           {/* Results List */}
           <div className="space-y-4 mb-8">
-            {shuffledQuestions.map((q, qIndex) => (
+            {(shuffledQuestions || []).map((q, qIndex) => (
               <ResultItem
                 key={qIndex}
                 question={q}
                 questionIndex={qIndex}
-                selectedAnswer={selectedAnswers[qIndex]}
+                selectedAnswer={selectedAnswers?.[qIndex]}
                 hasGrading={hasGrading}
               />
             ))}
@@ -994,11 +1528,13 @@ D. 6`}</pre>
   return (
     <div className="app">
       {showRestoreModal && restoreData && (
-        <RestoreSession
-          savedAt={restoreData.savedAt}
-          onRestore={handleRestore}
-          onDiscard={handleDiscard}
-        />
+        <ErrorBoundary>
+          <RestoreSession
+            savedAt={restoreData?.savedAt}
+            onRestore={handleRestore}
+            onDiscard={handleDiscard}
+          />
+        </ErrorBoundary>
       )}
 
       {/* Quiz Library Views */}
@@ -1017,10 +1553,17 @@ D. 6`}</pre>
       )}
 
       {/* Main App Views */}
-      {!libraryState.show && gameState === 'upload' && renderUploadState()}
-      {!libraryState.show && gameState === 'review' && renderReviewState()}
-      {!libraryState.show && gameState === 'playing' && renderPlayingState()}
-      {!libraryState.show && gameState === 'results' && renderResultsState()}
+      {!libraryState.show && (
+        <Routes>
+          <Route path="/" element={renderUploadState()} />
+          <Route path="/editor" element={renderReviewState()} />
+          <Route path="/quiz" element={renderPlayingState()} />
+          <Route path="/result" element={renderResultsState()} />
+          <Route path="/format-guide" element={<FormatGuide onBack={() => navigate('/')} />} />
+          <Route path="/ai-format" element={<AIFormatGuide onBack={() => navigate('/')} />} />
+          <Route path="*" element={renderUploadState()} />
+        </Routes>
+      )}
     </div>
   );
 }

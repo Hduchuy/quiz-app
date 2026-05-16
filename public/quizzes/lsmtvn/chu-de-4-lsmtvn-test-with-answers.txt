@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Chức năng chính của khải hoàn môn La Mã là gì?
 
 A. Đóng vai trò trung tâm thương mại
@@ -186,3 +187,4 @@ Câu 27: Ý nghĩa của việc người chết phải vượt qua thử thách 
 B. Là một nghi thức để linh hồn ca ngợi các vị thần
 C. Kiểm tra sự trung thành với thần linh
 D. Để chứng minh sự kiên cường chiến đấu của linh hồn trước thần linh
+

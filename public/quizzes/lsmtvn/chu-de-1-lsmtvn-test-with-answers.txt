@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Bạn được giao nhiệm vụ ứng dụng hoa văn và hình tượng từ "Tượng người trên cán dao" vào thiết kế bìa sách. Để tạo dấu ấn bạn sẽ thực hiện như thế nào?
 
 *A. Tái hiện các chi tiết mắt, mũi, miệng, đầu tóc và đồ trang sức như vòng tay, hoa tai một cách tỉ mỉ sau khi đã cách điệu.
@@ -61,6 +62,7 @@ B. Đôi trai gái đang cầm chày giã vào một chiếc cối, đầu chày
 C. Người mặc váy dài, có hai vạt tỏa ra hai phía, vừa đi vừa múa
 *D. Chim Lạc
 
+[TRUE_FALSE]
 Câu 10: Đâu là loại hình mỹ thuật tiêu biểu ở thời kỳ dựng nước?
 
 1. Hội họa sơn dầu. [Sai]
@@ -68,6 +70,7 @@ Câu 10: Đâu là loại hình mỹ thuật tiêu biểu ở thời kỳ dựng
 3. Nghệ thuật sắp đặt đương đại [Sai]
 4. Điêu khắc và trang trí trên đồ gốm - đồng [Đúng]
 
+[MULTIPLE]
 Câu 11: Đáp án nào là ĐÚNG đối với “Thạp đồng Đào Thịnh"
 
 *A. Trên nắp, ở giữa là hình mặt trời với các tia sáng, xung quanh là tượng 4 đôi nam nữ đang giao hoan.
@@ -75,6 +78,7 @@ B. Thạp dùng để cất giấu vũ khí
 *C. Thân thạp: Cảnh diễn của một lễ hội khải hoàn.
 D. Mặt ngoài thạp phủ kín hoa văn trang trí: hoa sen, hoa cúc, hình các nàng tiên chơi đàn...
 
+[MULTIPLE]
 Câu 12: Đáp án nào là ĐÚNG đối với Thành cổ Loa?
 
 *A. Được xây dựng gồm có ba vòng. Phía ngoài các vòng đều có hào sâu, rộng bao quanh.
@@ -82,6 +86,7 @@ Câu 12: Đáp án nào là ĐÚNG đối với Thành cổ Loa?
 C. Nằm ở vị trí núi non hiểm trở, có lợi cho việc bày binh bố trận quân sự.
 D. Nằm sát bờ biển miền Trung
 
+[SINGLE]
 Câu 13: Hình hoa văn 14 cánh ở giữa tâm trống đồng Ngọc Lũ tượng trưng cho ý nghĩa gì?
 
 A. Mô tả cảnh sinh hoạt hàng ngày của người Đông Sơn.
@@ -256,3 +261,4 @@ Câu 37: Ý nghĩa của các bức tượng nhỏ trên nắp thạp đồng Đ
 B. Sự tôn vinh các vị thần
 C. Sự trang trí nghệ thuật đơn thuần
 D. Tôn vinh nghề chài lưới
+

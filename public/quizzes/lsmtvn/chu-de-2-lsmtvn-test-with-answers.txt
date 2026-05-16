@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Bạn được giao nhiệm vụ một thiết kế về đồ hoạ mà phải làm nổi bật được đặc trưng mỹ thuật thời Lý, bạn sẽ nhấn mạnh vào những điểm nào?
 
 A. Hoa văn lớn và trang trí thưa thớt.
@@ -235,3 +236,4 @@ Câu 34: Việc mỹ thuật thời Nguyễn sử dụng nhiều màu sắc rự
 B. Nhà Nguyễn không coi trọng yếu tố thẩm mỹ
 *C. Thế hiện tư duy thích dùng màu mạnh trong mỹ thuật cung đình
 D. Màu sắc rực rỡ chỉ để mô phỏng phong cách Bắc Âu
+

@@ -48,8 +48,9 @@
   flex-direction: column;
   height: 100dvh;
   min-height: 0;
-  max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 0;
   overflow: hidden;
   /* DO NOT add overflow-x: hidden here - it blocks fixed positioning */

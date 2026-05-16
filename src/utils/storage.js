@@ -136,8 +136,10 @@ export function createQuizSnapshot({
     questions: questions || [],
     editedQuestions: editedQuestions || [],
     hasAnswerKey: (editedQuestions || []).some(q => {
-      if (q.type === 'multiple') return q.options.some(o => o.correct);
-      if (q.type === 'truefalse-group') return q.statements.some(s => s.answer !== null);
+      if (q.type === 'single' || q.type === 'multiple') return q.options.some(o => o.correct);
+      if (q.type === 'true_false') return q.statements.some(s => s.answer !== null);
+      if (q.type === 'match') return q.targets.length > 0 && Object.keys(q.correctMatches || {}).length > 0;
+      if (q.type === 'cloze') return (q.segments || []).some(s => s.type === 'blank' && s.answers?.length > 0);
       return false;
     }),
     quizState: {

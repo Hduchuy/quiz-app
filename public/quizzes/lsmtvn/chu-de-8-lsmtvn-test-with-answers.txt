@@ -1,3 +1,4 @@
+[SINGLE]
 Câu 1: Cách tiếp cận của Bauhaus trong đào tạo thiết kế tập trung vào điều gì?
 
 *A. Tập trung kết hợp giữa khả năng thủ công và mỹ nghệ.
@@ -207,3 +208,4 @@ Câu 30: Vì sao sự mở rộng quan hệ quốc tế và phát triển giao t
 2. Vì nhiều công trình dịch vụ như khách sạn, rạp chiếu bóng phải được tân trang [Đúng]
 3. Vì thiết kế không còn chịu ảnh hưởng từ nghệ thuật thế giới [Sai]
 4. Vì cần cải tiến thiết kế tàu thủy, máy bay đáp ứng nhu cầu đi lại [Đúng]
+
