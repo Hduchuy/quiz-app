@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { sessionStorage, type SessionData } from '@/utils/sessionStorage';
+import type { SessionData } from '@/utils/sessionStorage';
 
 interface RestoreSessionModalProps {
   isOpen: boolean;

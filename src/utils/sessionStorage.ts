@@ -1,5 +1,5 @@
 import type { Quiz } from '@/types';
-import type { RandomizationState, Answer, Set as ImmutableSet } from '@/types';
+import type { RandomizationState, Answer } from '@/types';
 
 // Session data structure
 export interface SessionData {
@@ -31,16 +31,6 @@ export interface TestSessionState {
 
 const SESSION_KEY = 'quiz-studio-session';
 const CURRENT_VERSION = 1;
-
-function safeJSONParse<T>(str: string | null, fallback: T): T {
-  if (!str) return fallback;
-  try {
-    const parsed = JSON.parse(str);
-    return parsed as T;
-  } catch {
-    return fallback;
-  }
-}
 
 export const sessionStorage = {
   save(session: SessionData): void {
