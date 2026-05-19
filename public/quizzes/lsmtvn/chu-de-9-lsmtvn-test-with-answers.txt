@@ -1,0 +1,211 @@
+[SINGLE]
+Câu 1: Ảnh hưởng của văn hóa Trung Quốc đến nghệ thuật in ấn Việt Nam thể hiện rõ nhất qua yếu tố nào?
+
+A. Sử dụng giấy làm từ vỏ cây mía
+B. Sử dụng mực đen chế từ than đá
+C. Sử dụng màu sắc tươi sáng
+*D. Sử dụng kỹ thuật in khắc gỗ
+
+Câu 2: Đồ họa độc lập thường được gọi là gì?
+
+A. Đồ họa ứng dụng
+B. Đồ họa biếm họa
+*C. Đồ họa giá vẽ
+D. Đồ họa minh họa
+
+Câu 3: Khi bạn vận dụng Phong cách thiết kế hoài cổ (Nostalgic) vào trong đồ án của mình, bạn sẽ sử dụng những yếu tố tạo hình nào?
+
+A. Các yếu tố thiên nhiên như lá cây và hoa
+B. Các dải màu sắc holographic tạo cảm giác chiều sâu
+*C. Các yếu tố mộc mạc, hoài cổ để khơi gợi về quá khứ
+D. Các hình dạng hình học đơn giản và màu sắc tối giản
+
+Câu 4: Khi bạn vận dụng Phong cách thiết kế nữ tính (Feminine) vào trong đồ án của mình, bạn sẽ sử dụng những yếu tố tạo hình nào?
+
+*A. Các chi tiết thu hút sự chú ý của phụ nữ như bảng màu nhẹ nhàng, hoa cỏ và chữ viết tay
+B. Các dải màu sắc holographic tạo cảm giác chiều sâu
+C. Các yếu tố thiên nhiên như lá cây, hoa, núi, đất, cây
+D. Các hình dạng hình học đơn giản và màu sắc tối giản
+
+Câu 5: Khi bạn vận dụng Phong cách thiết kế tự nhiên (Organic) vào trong đồ án của mình, bạn sẽ sử dụng những yếu tố tạo hình nào?
+
+*A. Các yếu tố thiên nhiên như lá cây, hoa, núi, đất, cây
+B. Các hình dạng hình học đơn giản và màu sắc tối giản
+C. Các dải màu sắc holographic tạo cảm giác chiều sâu
+D. Các yếu tố mộc mạc, hoài cổ để khơi gợi về quá khứ
+
+Câu 6: Khi bạn vận dụng Phong cách thiết kế Typographic vào trong đồ án của mình, bạn sẽ sử dụng những yếu tố tạo hình nào?
+
+A. Các dải màu sắc holographic tạo cảm giác chuyển, loang mầu
+B. Các hình dạng hình học đơn giản và màu sắc tối giản
+*C. Các font chữ phù hợp để truyền tải thông điệp, với chữ là yếu tố chính
+D. Các yếu tố thiên nhiên như lá cây và hoa
+
+Câu 7: Kỹ thuật in khắc gỗ tại Việt Nam bắt đầu phát triển từ thời kỳ nào?
+
+A. Thời kỳ nguyên thuỷ
+B. Thời kỳ hiện đại
+C. Thời kỳ An Dương Vương
+*D. Thời kỳ nhà Lý
+
+Câu 8: Nghệ thuật in ấn nào ở Việt Nam đã được UNESCO công nhận là di sản văn hóa phi vật thể?
+
+A. In offset
+B. In kim loại truyền thống
+C. In lụa truyền thống
+*D. In khắc gỗ Đông Hồ
+
+Câu 9: Nghệ thuật in khắc gỗ tại Việt Nam bị ảnh hưởng bởi nền văn hóa nào?
+
+A. Hàn Quốc
+*B. Trung Quốc
+C. Nhật Bản
+D. Ấn Độ
+
+Câu 10: Phong cách thiết kế nào đang chiếm lĩnh trong các thiết kế UI và trong các minh họa, banner, tờ rơi mang phong cách đơn giản nhưng rất hiện đại.
+
+A. Phong cách thiết kế Typographic
+*B. Phong cách thiết kế phẳng (Flat) đơn giản, hiện đại.
+C. Phong cách thiết kế trừu tượng (Abstract)
+D. Phong cách thiết kế Isometric
+
+Câu 11: Phong cách thiết kế nào được biết đến với sự trỗi dậy công nghệ Thực tế ảo tạo cảm giác chiều sâu như 3D?
+
+A. Phong cách thiết kế tối giản (Minimalist)
+B. Phong cách thiết kế nữ tính (Feminine)
+*C. Phong cách thiết kế 3D (Realism)
+D. Phong cách thiết kế Holographic
+
+Câu 12: Phong cách thiết kế nào được biết đến với việc sử dụng các dải màu sắc, loang mầu, thường được áp dụng trong quảng cáo và thời trang?
+
+A. Phong cách thiết kế tối giản (Minimalist)
+B. Phong cách thiết kế vui nhộn
+C. Phong cách thiết kế Typographic
+*D. Phong cách thiết kế Holographic
+
+Câu 13: Phong cách thiết kế nào kết hợp các yếu tố như lá cây, hoa, và núi để gợi cảm giác hòa mình vào thiên nhiên?
+
+A. Phong cách thiết kế Holographic
+B. Phong cách thiết kế sang trọng
+C. Phong cách thiết kế minh họa (Illustrated)
+*D. Phong cách thiết kế tự nhiên (Organic)
+
+Câu 14: Phong cách thiết kế nào thường kết hợp với các font chữ uốn lượn và tone màu pastel nhẹ nhàng, thơ mộng?
+
+A. Phong cách thiết kế trừu tượng (Abstract)
+B. Phong cách thiết kế Isometric
+*C. Phong cách thiết kế nữ tính (Feminine)
+D. Phong cách thiết kế hình học (Geometric shapes)
+
+Câu 15: Phong cách thiết kế nào sử dụng các yếu tố hoài cổ để tạo cảm giác về quá khứ và sự thoải mái?
+
+*A. Phong cách thiết kế hoài cổ (Nostalgic)
+B. Phong cách thiết kế phẳng (Flat)
+C. Phong cách thiết kế 3D (Realism)
+D. Phong cách thiết kế Vintage
+
+Câu 16: Phong cách thiết kế nào sử dụng các yếu tố như màu đen, vàng gold và đồng để tạo cảm giác sang trọng?
+
+*A. Phong cách thiết kế sang trọng
+B. Phong cách thiết kế 3D (Realism)
+C. Phong cách thiết kế vui nhộn
+D. Phong cách thiết kế hoài cổ (Nostalgic)
+
+Câu 17: Phong cách thiết kế nào tập trung vào việc sử dụng các font chữ để truyền tải thông điệp và thường kết hợp với các yếu tố thiết kế phụ để làm nổi bật thông điệp?
+
+A. Phong cách thiết kế tối giản
+B. Phong cách thiết kế trừu tượng
+*C. Phong cách thiết kế Typographic
+D. Phong cách thiết kế vui nhộn
+
+Câu 18: Phong cách thiết kế nào tập trung vào việc sử dụng icon tối giản và số lượng màu sắc ít để tạo sự rõ ràng trong thông điệp, chiếm lĩnh trong các thiết kế UI?
+
+A. Phong cách thiết kế vui nhộn
+*B. Phong cách thiết kế phẳng (Flat)
+C. Phong cách thiết kế Typographic
+D. Phong cách thiết kế Vintage
+
+Câu 19: Phong cách thiết kế nào thường sử dụng bảng màu nhẹ nhàng, hoa cỏ và chữ viết tay để thu hút sự chú ý của phụ nữ?
+
+A. Phong cách thiết kế trừu tượng (Abstract)
+B. Phong cách thiết kế 3D (Realism)
+*C. Phong cách thiết kế nữ tính (Feminine)
+D. Phong cách thiết kế Vintage
+
+Câu 20: Phong cách thiết kế tối giản (Minimalist) tập trung vào điều gì trong thiết kế?
+
+A. Các chi tiết hoa văn và hình ảnh mô phỏng 3D để tạo cảm giác chiều sâu
+B. Sử dụng các yếu tố hình học phức tạp và màu sắc đa dạng
+C. Kết hợp nhiều loại font chữ để tạo điểm nhấn trong thiết kế
+*D. Sự đơn giản của các hình, mảng, khối, đường, nét, màu sắc, typography... với tinh thần "less is more"
+
+Câu 21: Phương pháp in nào được sử dụng phổ biến trong tranh Đông Hồ?
+
+A. In đá
+*B. In gỗ
+C. In kim loại
+D. In lụa
+
+Câu 22: Sách chép tay và khắc đá là hình thức in ấn xuất hiện từ thời kỳ nào ở Việt Nam?
+
+A. Sơ sử
+B. Hiện đại
+*C. Bắc thuộc
+D. Nguyên thuỷ
+
+Câu 23: Tại sao kỹ thuật khắc nóng (khắc axit) trong đồ họa khắc kim loại lại cần sử dụng dung dịch axit?
+
+A. Để tạo màu cho bản in
+B. Để bảo vệ bản in khỏi oxy hóa
+*C. Để tạo các rãnh lõm trên bề mặt bản in
+D. Để làm se cứng mặt kim loại
+
+Câu 24: Tại sao kỹ thuật in khắc gỗ lại phổ biến trong giai đoạn lịch sử Bắc thuộc?
+
+A. Do người dân chỉ biết kỹ thuật in lưới
+B. Người dân in trên chất liệu khác, không phải trên gỗ
+C. Người dân chỉ biết đến in ấn bằng máy móc hiện đại
+*D. Do ảnh hưởng của văn hóa Trung Quốc và sự phổ biến của Phật giáo
+
+Câu 25: Thời xưa, mỗi dịp tết đến loại tranh nào thường được treo trong nhà ở thành thị?
+
+*A. Tranh Hàng Trống
+B. Tranh Đông Hồ
+C. Tranh in ấn bằng máy móc
+D. Tranh khắc kim loại
+
+Câu 26: Thời xưa, ở vùng làng quê mỗi dịp tết đến người dân thường theo tranh nào?
+
+A. Tranh gốm
+*B. Tranh Đông Hồ
+C. Tranh sơn mài
+D. Tranh Hàng Trống
+
+Câu 27: Tranh cổ động có ngôn ngữ đặc trưng nào?
+
+A. Sử dụng nhiều màu trung tính
+B. Phức tạp, nhiều chi tiết
+C. Chỉ dùng màu đen và trắng
+*D. Đơn giản, dễ hiểu
+
+Câu 28: Tranh cổ động trong đồ họa ứng dụng thường có màu sắc như thế nào?
+
+*A. Màu sắc mạnh mẽ, tương phản, gây chú ý
+B. Màu sắc trầm buồn
+C. Màu sắc trung tính, đơn giản
+D. Màu sắc nhẹ nhàng, hài hòa
+
+Câu 29: Tranh Đông Hồ có phải dùng hoàn toàn nhiều bản khắc không?
+
+A. Tranh Đông Hồ không dùng bản khắc
+*B. Dùng nhiều bản khắc cho một bức tranh
+C. Chỉ dùng một bản khắc sau đó vẽ tay
+D. Chỉ dùng một bản khắc
+
+Câu 30: Trong kỹ thuật khắc kim loại, loại chất liệu nào thường được sửdụng làm bản in?
+
+*A. Kẽm hoặc đồng
+B. Đá
+C. Gỗ
+D. Giấy
+
