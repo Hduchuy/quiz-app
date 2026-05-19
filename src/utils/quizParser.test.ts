@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseQuizText } from './quizParser';
+import { TrueFalseQuestion } from '../types';
 
 describe('quizParser - DUNG_SAI questions', () => {
   it('should parse bracketed answers at the end of statement lines', () => {
@@ -15,7 +16,7 @@ Câu 1: Chiến tranh giành độc lập của 13 thuộc địa Anh ở Bắc 
     expect(result.errors).toHaveLength(0);
     expect(result.questions).toHaveLength(1);
 
-    const question = result.questions[0];
+    const question = result.questions[0] as TrueFalseQuestion;
     expect(question.title).toBe('Chiến tranh giành độc lập của 13 thuộc địa Anh ở Bắc Mỹ.');
     expect(question.type).toBe('truefalse');
     
@@ -44,7 +45,7 @@ Câu 2: Cách mạng tư sản Pháp.
 
     const result = parseQuizText(input);
     expect(result.questions).toHaveLength(1);
-    const question = result.questions[0];
+    const question = result.questions[0] as TrueFalseQuestion;
 
     expect(question.statements[0].text).toBe('Lật đổ chế độ phong kiến chuyên chế.');
     expect(question.statements[0].answer).toBe(true);
@@ -74,7 +75,7 @@ Sai.
 
     const result = parseQuizText(input);
     expect(result.questions).toHaveLength(1);
-    const question = result.questions[0];
+    const question = result.questions[0] as TrueFalseQuestion;
 
     expect(question.statements[0].text).toBe('Mâu thuẫn giữa tư sản và quý tộc mới với phong kiến.');
     expect(question.statements[0].answer).toBe(true);
@@ -100,7 +101,7 @@ Câu 4: Nhận định về chủ nghĩa tư bản.
 
     const result = parseQuizText(input);
     expect(result.questions).toHaveLength(1);
-    const question = result.questions[0];
+    const question = result.questions[0] as TrueFalseQuestion;
 
     // Statement 1: "là đúng quy luật" -> "đúng" is normal word
     expect(question.statements[0].text).toBe('Sự phát triển của độc quyền là đúng quy luật khách quan.');
@@ -130,7 +131,7 @@ Câu 5: Test trim và dấu câu.
 
     const result = parseQuizText(input);
     expect(result.questions).toHaveLength(1);
-    const question = result.questions[0];
+    const question = result.questions[0] as TrueFalseQuestion;
 
     expect(question.statements[0].text).toBe('Nội dung câu hỏi.');
     expect(question.statements[0].answer).toBe(true);
