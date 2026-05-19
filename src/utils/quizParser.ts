@@ -149,6 +149,45 @@ function parseTrueFalseBlock(block: string, warnings: string[]): Question | null
   const title = lines[0].replace(/^câu\s*\d+[.:)]\s*/i, '').trim();
   if (!title) return null;
   
+  // Helper to extract answer marker from text
+  const extractAnswer = (text: string): { cleanText: string; answer: boolean | null } => {
+    let cleanText = text.trim();
+    let answer: boolean | null = null;
+
+    // 1. Bracketed answer marker at the end: [Đúng], [Sai]
+    const bracketRegex = /\s*\[(đúng|sai)\]\.?$/i;
+    const bracketMatch = cleanText.match(bracketRegex);
+    if (bracketMatch) {
+      answer = /^đúng$/i.test(bracketMatch[1]);
+      cleanText = cleanText.replace(bracketRegex, '').trim();
+      return { cleanText, answer };
+    }
+
+    // 2. Unbracketed answer marker at the end following punctuation (separated naturally)
+    // Supports: . , ; : ! ? - – — ... …
+    // Group 1: kept punctuation (.,;!?)
+    // Group 2: removed separators (-:–—)
+    const punctuationRegex = /(?:([.,;!?]|\.\.\.|\u2026)|([\-:\u2013\u2014]))\s*(đúng|sai)\.?$/i;
+    const punctMatch = cleanText.match(punctuationRegex);
+    if (punctMatch) {
+      const rawAnswer = punctMatch[3];
+      answer = /^đúng$/i.test(rawAnswer);
+      
+      if (punctMatch[2]) {
+        // If it's a separator like - or :, strip the separator along with the marker
+        const separatorPartRegex = /(?:[\-:\u2013\u2014])\s*(đúng|sai)\.?$/i;
+        cleanText = cleanText.replace(separatorPartRegex, '').trim();
+      } else {
+        // If it's standard sentence punctuation, keep it and only strip the marker
+        const markerPartRegex = /\s*(đúng|sai)\.?$/i;
+        cleanText = cleanText.replace(markerPartRegex, '').trim();
+      }
+      return { cleanText, answer };
+    }
+
+    return { cleanText, answer };
+  };
+
   // Parse statements 1, 2, 3, 4
   const statements: { text: string; answer: boolean | null }[] = [];
   let currentStatement: { text: string; answer: boolean | null } | null = null;
@@ -163,22 +202,24 @@ function parseTrueFalseBlock(block: string, warnings: string[]): Question | null
       if (currentStatement) {
         statements.push(currentStatement);
       }
+      
+      const { cleanText, answer } = extractAnswer(statementMatch[2]);
       currentStatement = {
-        text: statementMatch[2].trim(),
-        answer: null,
+        text: cleanText,
+        answer: answer,
       };
       continue;
     }
     
     // Check for [Đúng] or [Sai]
-    const bracketMatch = line.match(/^\[(đúng|sai)\]/i);
+    const bracketMatch = line.match(/^\[(đúng|sai)\]\.?$/i);
     if (bracketMatch && currentStatement) {
       currentStatement.answer = /^đúng$/i.test(bracketMatch[1]);
       continue;
     }
     
     // Check for standalone Đúng/Sai
-    const standaloneMatch = line.match(/^(đúng|sai)$/i);
+    const standaloneMatch = line.match(/^(đúng|sai)\.?$/i);
     if (standaloneMatch && currentStatement) {
       currentStatement.answer = /^đúng$/i.test(standaloneMatch[1]);
       continue;
@@ -189,7 +230,11 @@ function parseTrueFalseBlock(block: string, warnings: string[]): Question | null
     
     // If statement has no text yet, this line is the text
     if (!currentStatement.text) {
-      currentStatement.text = line;
+      const { cleanText, answer } = extractAnswer(line);
+      currentStatement.text = cleanText;
+      if (answer !== null) {
+        currentStatement.answer = answer;
+      }
     }
   }
   
