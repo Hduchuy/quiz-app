@@ -269,7 +269,7 @@ export function createEmptyDragDropBoxes(): DragDropBoxesQuestion {
   return {
     id: crypto.randomUUID(),
     type: 'drag_drop_boxes',
-    title: 'Kéo thả đáp án vào các ô tương ứng',
+    title: '',
     targets: [
       { id: crypto.randomUUID(), title: '', correctAnswers: [''] },
       { id: crypto.randomUUID(), title: '', correctAnswers: [''] },

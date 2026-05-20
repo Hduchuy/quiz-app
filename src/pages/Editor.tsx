@@ -179,7 +179,7 @@ function QuestionCard({
     mcq: { label: 'Trắc nghiệm', icon: ListChecks, color: 'cyan' },
     truefalse: { label: 'Đúng/Sai', icon: CheckCircle, color: 'green' },
     fillblank: { label: 'Điền chỗ trống', icon: Type, color: 'pink' },
-    matching: { label: 'Kéo thả', icon: LayoutGrid, color: 'purple' },
+    drag_drop_boxes: { label: 'Kéo thả', icon: LayoutGrid, color: 'purple' },
   };
 
   const config = typeConfig[question.type] ?? { label: 'Câu hỏi', icon: ListChecks, color: 'cyan' as const };
@@ -413,7 +413,11 @@ function QuestionEditor({ question, onUpdate }: QuestionEditorProps) {
   if (question.type === 'fillblank') {
     return <FillBlankEditor question={question} onUpdate={onUpdate} />;
   }
-  return null;
+  return (
+    <div className="p-4 rounded-xl bg-neon-red/5 border border-neon-red/20 text-center">
+      <p className="text-neon-red font-medium text-sm">Loại câu hỏi chưa được hỗ trợ ({question.type})</p>
+    </div>
+  );
 }
 
 // MCQ Editor
@@ -853,23 +857,26 @@ const StatementEditor = React.memo(function StatementEditor({
 
 // DragDropBoxes Editor
 function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQuestion; onUpdate: (u: Partial<DragDropBoxesQuestion>) => void }) {
+  const targets = question.targets ?? [];
+  const distractors = question.distractors ?? [];
+
   // Generate all answers (correct + distractors) for preview
   const allAnswers = [
-    ...question.targets.flatMap((t) => t.correctAnswers),
-    ...question.distractors,
+    ...targets.flatMap((t) => t.correctAnswers ?? []),
+    ...distractors,
   ];
 
   // Add a new target box
   const addTarget = () => {
     onUpdate({
-      targets: [...question.targets, { id: crypto.randomUUID(), title: '', correctAnswers: [''] }],
+      targets: [...targets, { id: crypto.randomUUID(), title: '', correctAnswers: [''] }],
     });
   };
 
   // Update a target's title
   const updateTargetTitle = (targetId: string, title: string) => {
     onUpdate({
-      targets: question.targets.map((t) =>
+      targets: targets.map((t) =>
         t.id === targetId ? { ...t, title } : t
       ),
     });
@@ -878,7 +885,7 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
   // Update a target's correct answers
   const updateTargetAnswers = (targetId: string, answers: string[]) => {
     onUpdate({
-      targets: question.targets.map((t) =>
+      targets: targets.map((t) =>
         t.id === targetId ? { ...t, correctAnswers: answers } : t
       ),
     });
@@ -886,17 +893,17 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
 
   // Add an answer to a target
   const addAnswerToTarget = (targetId: string) => {
-    const target = question.targets.find((t) => t.id === targetId);
+    const target = targets.find((t) => t.id === targetId);
     if (target) {
-      updateTargetAnswers(targetId, [...target.correctAnswers, '']);
+      updateTargetAnswers(targetId, [...(target.correctAnswers ?? []), '']);
     }
   };
 
   // Update a specific answer in a target
   const updateAnswer = (targetId: string, index: number, text: string) => {
-    const target = question.targets.find((t) => t.id === targetId);
+    const target = targets.find((t) => t.id === targetId);
     if (target) {
-      const newAnswers = [...target.correctAnswers];
+      const newAnswers = [...(target.correctAnswers ?? [])];
       newAnswers[index] = text;
       updateTargetAnswers(targetId, newAnswers);
     }
@@ -904,18 +911,18 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
 
   // Remove an answer from a target
   const removeAnswerFromTarget = (targetId: string, index: number) => {
-    const target = question.targets.find((t) => t.id === targetId);
-    if (target && target.correctAnswers.length > 1) {
-      const newAnswers = target.correctAnswers.filter((_, i) => i !== index);
+    const target = targets.find((t) => t.id === targetId);
+    if (target && (target.correctAnswers ?? []).length > 1) {
+      const newAnswers = (target.correctAnswers ?? []).filter((_, i) => i !== index);
       updateTargetAnswers(targetId, newAnswers);
     }
   };
 
   // Remove a target
   const removeTarget = (targetId: string) => {
-    if (question.targets.length > 1) {
+    if (targets.length > 1) {
       onUpdate({
-        targets: question.targets.filter((t) => t.id !== targetId),
+        targets: targets.filter((t) => t.id !== targetId),
       });
     }
   };
@@ -923,13 +930,13 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
   // Add a distractor
   const addDistractor = () => {
     onUpdate({
-      distractors: [...question.distractors, ''],
+      distractors: [...distractors, ''],
     });
   };
 
   // Update a distractor
   const updateDistractor = (index: number, text: string) => {
-    const newDistractors = [...question.distractors];
+    const newDistractors = [...distractors];
     newDistractors[index] = text;
     onUpdate({ distractors: newDistractors });
   };
@@ -937,7 +944,7 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
   // Remove a distractor
   const removeDistractor = (index: number) => {
     onUpdate({
-      distractors: question.distractors.filter((_, i) => i !== index),
+      distractors: distractors.filter((_, i) => i !== index),
     });
   };
 
@@ -961,7 +968,7 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          {question.targets.map((target, targetIndex) => (
+          {targets.map((target, targetIndex) => (
             <TargetBoxEditor
               key={target.id}
               target={target}
@@ -971,7 +978,7 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
               onAddAnswer={() => addAnswerToTarget(target.id)}
               onUpdateAnswer={(index, text) => updateAnswer(target.id, index, text)}
               onRemoveAnswer={(index) => removeAnswerFromTarget(target.id, index)}
-              onRemove={question.targets.length > 1 ? () => removeTarget(target.id) : undefined}
+              onRemove={targets.length > 1 ? () => removeTarget(target.id) : undefined}
             />
           ))}
         </div>
@@ -989,9 +996,9 @@ function DragDropBoxesEditor({ question, onUpdate }: { question: DragDropBoxesQu
           Các đáp án nhiễu sẽ xuất hiện trong kho đáp án để tăng độ khó
         </p>
 
-        {question.distractors.length > 0 && (
+        {distractors.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {question.distractors.map((distractor, index) => (
+            {distractors.map((distractor, index) => (
               <div key={index} className="flex items-center gap-1">
                 <input
                   type="text"
@@ -1065,6 +1072,7 @@ function TargetBoxEditor({
   onRemove,
 }: TargetBoxEditorProps) {
   const label = String.fromCharCode(65 + index);
+  const correctAnswers = target.correctAnswers ?? [];
 
   return (
     <div className="p-3 rounded-xl bg-white/5 border border-neon-purple/20 space-y-2">
@@ -1102,7 +1110,7 @@ function TargetBoxEditor({
           </button>
         </div>
         <div className="space-y-1">
-          {target.correctAnswers.map((answer, answerIndex) => (
+          {correctAnswers.map((answer, answerIndex) => (
             <div key={answerIndex} className="flex items-center gap-1.5">
               <CheckCircle size={10} className="text-neon-green flex-shrink-0" />
               <input
@@ -1112,7 +1120,7 @@ function TargetBoxEditor({
                 placeholder="Đáp án..."
                 className="flex-1 px-2 py-1 rounded-md bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-neon-green/50"
               />
-              {target.correctAnswers.length > 1 && (
+              {correctAnswers.length > 1 && (
                 <button
                   onClick={() => onRemoveAnswer(answerIndex)}
                   className="p-0.5 text-white/40 hover:text-neon-red transition-colors"

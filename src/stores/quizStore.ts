@@ -4,10 +4,23 @@ import type { Quiz, Question, QuestionType, QuizSettings } from '@/types';
 import { createEmptyQuiz, createEmptyMCQ, createEmptyTrueFalse, createEmptyDragDropBoxes, createEmptyFillBlank, createEmptyMatching } from '@/types';
 
 // Only 4 valid question types
-const VALID_TYPES = ['mcq', 'truefalse', 'fillblank', 'matching', 'drag_drop_boxes'] as const;
+const VALID_TYPES = ['mcq', 'truefalse', 'fillblank', 'drag_drop_boxes'] as const;
 
 function validateQuestion(q: any): Question | null {
   if (!q || !q.id || !q.type) return null;
+  
+  // Migration fallback: Convert legacy matching type to drag_drop_boxes
+  if (q.type === 'matching') {
+    q.type = 'drag_drop_boxes';
+    if (!Array.isArray(q.targets) && Array.isArray(q.matchingItems)) {
+      q.targets = q.matchingItems.map((item: any) => ({
+        id: item.id || crypto.randomUUID(),
+        title: item.left || '',
+        correctAnswers: [item.right || ''],
+      }));
+    }
+  }
+
   if (!VALID_TYPES.includes(q.type)) return null;
   
   // Ensure required arrays exist
@@ -27,9 +40,6 @@ function validateQuestion(q: any): Question | null {
   if (q.type === 'fillblank') {
     q.blanks = Array.isArray(q.blanks) ? q.blanks : [];
     q.content = q.content || '';
-  }
-  if (q.type === 'matching') {
-    q.matchingItems = Array.isArray(q.matchingItems) ? q.matchingItems : [];
   }
   if (q.type === 'drag_drop_boxes') {
     q.targets = Array.isArray(q.targets) ? q.targets : [];
@@ -149,8 +159,8 @@ export const useQuizStore = create<QuizState>()(
           case 'fillblank':
             newQuestion = createEmptyFillBlank();
             break;
-          case 'matching':
-            newQuestion = createEmptyMatching();
+          case 'matching' as any: // Fallback map matching to drag_drop_boxes
+            newQuestion = createEmptyDragDropBoxes();
             break;
           default:
             newQuestion = createEmptyMCQ();
@@ -170,10 +180,11 @@ export const useQuizStore = create<QuizState>()(
       },
 
       addQuestions: (questions) => {
+        const validatedQuestions = questions.map(validateQuestion).filter((q): q is Question => q !== null);
         set((state) => ({
           quiz: {
             ...state.quiz,
-            questions: [...state.quiz.questions, ...questions],
+            questions: [...state.quiz.questions, ...validatedQuestions],
             updatedAt: Date.now(),
           },
           isDirty: true,

@@ -408,7 +408,11 @@ function QuestionAnswer({ question, answer, onAnswer, showResult = false, answer
   if (question.type === 'fillblank') {
     return <FillBlankAnswer question={question} answer={answer} onAnswer={onAnswer} showResult={showResult} />;
   }
-  return null;
+  return (
+    <div className="p-4 rounded-xl bg-neon-red/5 border border-neon-red/20 text-center">
+      <p className="text-neon-red font-medium text-sm">Loại câu hỏi chưa được hỗ trợ ({question.type})</p>
+    </div>
+  );
 }
 
 // MCQ Answer Component - Premium Redesign

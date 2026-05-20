@@ -455,7 +455,14 @@ export function ResultsPage() {
                 );
               }
 
-              return null;
+              return (
+                <div
+                  key={q.id}
+                  className="p-4 rounded-xl border border-neon-red/30 bg-neon-red/5 text-center"
+                >
+                  <p className="text-neon-red font-medium text-sm">Loại câu hỏi chưa được hỗ trợ ({q.type})</p>
+                </div>
+              );
             })}
           </div>
         </motion.div>

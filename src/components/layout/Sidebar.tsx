@@ -6,7 +6,7 @@ import { useQuizStore } from '@/stores/quizStore';
 import { useEditorStore } from '@/stores/editorStore';
 import { cn } from '@/utils/helpers';
 import { ImportModal } from '@/components/quiz/ImportModal';
-import type { Question, TrueFalseQuestion, FillBlankQuestion, MCQQuestion, MatchingQuestion } from '@/types';
+import type { Question, TrueFalseQuestion, FillBlankQuestion, MCQQuestion, DragDropBoxesQuestion } from '@/types';
 
 // Constants
 export const SIDEBAR_WIDTH = 288;
@@ -67,7 +67,7 @@ const TYPE_LABELS: Record<string, string> = {
   mcq: 'TN',
   truefalse: 'ĐS',
   fillblank: 'ĐC',
-  matching: 'KC',
+  drag_drop_boxes: 'KT',
 };
 
 export function Sidebar() {
@@ -105,7 +105,7 @@ function SidebarContent() {
     { type: 'mcq' as const, label: 'Trắc nghiệm', icon: ListChecks, color: 'cyan' },
     { type: 'truefalse' as const, label: 'Đúng/Sai', icon: CheckCircle, color: 'green' },
     { type: 'fillblank' as const, label: 'Điền chỗ trống', icon: Type, color: 'pink' },
-    { type: 'matching' as const, label: 'Kéo thả', icon: LayoutGrid, color: 'purple' },
+    { type: 'drag_drop_boxes' as const, label: 'Kéo thả', icon: LayoutGrid, color: 'purple' },
   ];
 
   const { quiz } = useQuizStore();
@@ -129,9 +129,12 @@ function SidebarContent() {
       const fbQ = q as FillBlankQuestion;
       return (fbQ.blanks?.length ?? 0) > 0 ? 'green' : 'yellow';
     }
-    if (q.type === 'matching') {
-      const mq = q as MatchingQuestion;
-      return (mq.matchingItems?.length ?? 0) >= 2 ? 'green' : 'yellow';
+    if (q.type === 'drag_drop_boxes') {
+      const ddQ = q as DragDropBoxesQuestion;
+      const targets = ddQ.targets ?? [];
+      const hasTargets = targets.length > 0;
+      const allFilled = targets.every((t) => t?.title?.trim() && (t?.correctAnswers?.length ?? 0) > 0 && t.correctAnswers.every(ans => ans?.trim()));
+      return hasTargets && allFilled ? 'green' : 'yellow';
     }
     return 'green';
   };
@@ -254,7 +257,7 @@ function SidebarContent() {
                         q.type === 'mcq' && 'bg-neon-cyan/10 text-neon-cyan',
                         q.type === 'truefalse' && 'bg-neon-green/10 text-neon-green',
                         q.type === 'fillblank' && 'bg-neon-pink/10 text-neon-pink',
-                        q.type === 'matching' && 'bg-neon-purple/10 text-neon-purple'
+                        q.type === 'drag_drop_boxes' && 'bg-neon-purple/10 text-neon-purple'
                       )}>
                         {TYPE_LABELS[q.type] || 'TN'}
                       </div>
@@ -326,7 +329,7 @@ function MobileSidebar() {
     { type: 'mcq' as const, label: 'Trắc nghiệm', icon: ListChecks, color: 'from-neon-cyan to-cyan-600' },
     { type: 'truefalse' as const, label: 'Đúng/Sai', icon: CheckCircle, color: 'from-neon-green to-emerald-600' },
     { type: 'fillblank' as const, label: 'Điền chỗ trống', icon: Type, color: 'from-pink-500 to-rose-600' },
-    { type: 'matching' as const, label: 'Kéo thả', icon: LayoutGrid, color: 'from-neon-purple to-violet-600' },
+    { type: 'drag_drop_boxes' as const, label: 'Kéo thả', icon: LayoutGrid, color: 'from-neon-purple to-violet-600' },
   ];
 
   const handleAddQuestion = (type: string) => {
