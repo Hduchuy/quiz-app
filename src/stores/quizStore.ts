@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Quiz, Question, QuestionType, QuizSettings } from '@/types';
-import { createEmptyQuiz, createEmptyMCQ, createEmptyTrueFalse, createEmptyDragDropBoxes, createEmptyFillBlank, createEmptyMatching } from '@/types';
+import { createEmptyQuiz, createEmptyMCQ, createEmptyTrueFalse, createEmptyDragDropBoxes, createEmptyFillBlank } from '@/types';
 
 // Only 4 valid question types
 const VALID_TYPES = ['mcq', 'truefalse', 'fillblank', 'drag_drop_boxes'] as const;
