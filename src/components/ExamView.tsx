@@ -47,7 +47,7 @@ export const ExamView: React.FC<ExamViewProps> = ({
   const startExam = () => {
     const allQuestions = courseData.topics.flatMap(t => t.questions);
     
-    // Deterministic or clean random shuffle
+    // Clean random shuffle
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(examQuestionCount, allQuestions.length));
 
@@ -97,7 +97,6 @@ export const ExamView: React.FC<ExamViewProps> = ({
     const topicBreakdown: Record<string, { total: number; correct: number }> = {};
 
     const detailedQuestions = questions.map(q => {
-      // Initialize topic breakdown
       if (!topicBreakdown[q.topicTitle]) {
         topicBreakdown[q.topicTitle] = { total: 0, correct: 0 };
       }
@@ -183,42 +182,43 @@ export const ExamView: React.FC<ExamViewProps> = ({
     const totalBank = courseData.topics.flatMap(t => t.questions).length;
 
     return (
-      <div style={{ maxWidth: 640, margin: '20px auto 0', width: '100%' }}>
-        <div className="card" style={{ padding: '36px 28px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+      <div style={{ maxWidth: 580, margin: '10px auto 0', width: '100%' }}>
+        <div className="card" style={{ padding: '20px 16px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{
-              width: 56,
-              height: 56,
-              borderRadius: 'var(--radius-lg)',
+              width: 48,
+              height: 48,
+              borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--primary-light)',
               color: 'var(--primary)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 14
+              marginBottom: 10
             }}>
-              <Clock size={30} />
+              <Clock size={24} />
             </div>
 
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
               Thi Thử Trắc Nghiệm
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.925rem' }}>
-              Môn học: <strong>{courseData.name}</strong> ({totalBank} câu trong ngân hàng)
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Môn: <strong>{courseData.name}</strong> ({totalBank} câu trong ngân hàng)
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 30 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 22 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 Số lượng câu hỏi trong đề:
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                 {[20, 30, 40, totalBank].map((count) => (
                   <button
                     key={count}
-                    className={`btn ${examQuestionCount === count ? 'btn-primary' : 'btn-secondary'}`}
+                    className={`btn btn-sm ${examQuestionCount === count ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => setExamQuestionCount(count)}
+                    style={{ padding: '8px 4px', fontSize: '0.8rem', justifyContent: 'center' }}
                   >
                     {count === totalBank ? `Tất cả (${totalBank})` : `${count} câu`}
                   </button>
@@ -227,15 +227,16 @@ export const ExamView: React.FC<ExamViewProps> = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 Thời gian làm bài:
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                 {[15, 30, 45, 60].map((mins) => (
                   <button
                     key={mins}
-                    className={`btn ${durationMinutes === mins ? 'btn-primary' : 'btn-secondary'}`}
+                    className={`btn btn-sm ${durationMinutes === mins ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => setDurationMinutes(mins)}
+                    style={{ padding: '8px 4px', fontSize: '0.8rem', justifyContent: 'center' }}
                   >
                     {mins} phút
                   </button>
@@ -244,39 +245,39 @@ export const ExamView: React.FC<ExamViewProps> = ({
             </div>
 
             <div style={{
-              padding: 16,
+              padding: '12px 14px',
               borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--bg-card-subtle)',
               border: '1px solid var(--border-color)',
-              fontSize: '0.875rem',
+              fontSize: '0.8rem',
               color: 'var(--text-secondary)',
-              lineHeight: 1.6
+              lineHeight: 1.5
             }}>
               <strong style={{ color: 'var(--text-primary)' }}>Quy chế thi thử:</strong>
-              <ul style={{ paddingLeft: 18, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <li>Hệ thống chọn ngẫu nhiên các câu hỏi từ toàn bộ các chủ đề.</li>
-                <li><strong>Không hiển thị đáp án đúng hay kết quả trong suốt thời gian thi.</strong></li>
-                <li>Tự động nộp bài khi hết thời gian đếm ngược.</li>
-                <li>Xem ngay điểm số theo thang 10 và xem lại toàn bộ lời giải sau khi nộp bài.</li>
+              <ul style={{ paddingLeft: 16, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <li>Hệ thống chọn ngẫu nhiên từ toàn bộ các chủ đề.</li>
+                <li><strong>Không hiển thị đáp án trong lúc làm bài.</strong></li>
+                <li>Tự động nộp bài khi hết giờ đếm ngược.</li>
+                <li>Xem điểm thang 10 và xem lại đáp án sau khi nộp.</li>
               </ul>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             <button
               className="btn btn-secondary"
               onClick={onCancelExam}
-              style={{ flex: 1 }}
+              style={{ flex: 1, padding: '10px 14px' }}
             >
-              Hủy & Quay lại
+              Hủy
             </button>
 
             <button
-              className="btn btn-primary btn-lg"
+              className="btn btn-primary"
               onClick={startExam}
-              style={{ flex: 2 }}
+              style={{ flex: 2, padding: '10px 14px' }}
             >
-              Bắt đầu tính giờ thi
+              Bắt đầu làm bài
             </button>
           </div>
         </div>
@@ -289,76 +290,75 @@ export const ExamView: React.FC<ExamViewProps> = ({
   const isTimeCritical = secondsRemaining <= 300; // < 5 mins
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 1050, margin: '0 auto', width: '100%' }}>
       {/* Exam Header Bar with Countdown Timer */}
       <div className="card" style={{
-        padding: '12px 18px',
+        padding: '8px 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 8,
         position: 'sticky',
-        top: 60,
+        top: 56,
         zIndex: 35,
-        boxShadow: 'var(--shadow-md)',
-        flexWrap: 'wrap'
+        boxShadow: 'var(--shadow-sm)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-            Phòng Thi Thử
+        {/* Left: Progress info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            Thi thử
           </span>
-          <span className="badge badge-primary">
-            Đã làm: {answeredCount} / {questions.length}
+          <span className="badge badge-primary" style={{ fontSize: '0.725rem', padding: '2px 6px' }}>
+            {answeredCount}/{questions.length}
           </span>
         </div>
 
-        {/* Timer Box */}
+        {/* Center: Countdown Timer */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '6px 14px',
-          borderRadius: 'var(--radius-sm)',
+          gap: 5,
+          padding: '4px 10px',
+          borderRadius: 'var(--radius-xs)',
           backgroundColor: isTimeCritical ? 'var(--danger-light)' : 'var(--bg-card-subtle)',
           color: isTimeCritical ? 'var(--danger-text)' : 'var(--text-primary)',
           border: `1.5px solid ${isTimeCritical ? 'var(--danger-border)' : 'var(--border-color)'}`,
           fontWeight: 800,
-          fontSize: '1.15rem'
+          fontSize: '1rem'
         }}>
-          <Clock size={18} className={isTimeCritical ? 'animate-pulse' : ''} />
+          <Clock size={15} className={isTimeCritical ? 'animate-pulse' : ''} />
           <span>{formatTime(secondsRemaining)}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Mobile Palette Toggle Button */}
+        {/* Right: Drawer Palette Trigger & Submit Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setShowMobilePalette(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ padding: '6px 8px' }}
+            title="Mở bảng câu hỏi"
+            aria-label="Mở bảng câu hỏi"
           >
-            <Layers size={15} />
-            <span>Bảng câu ({answeredCount}/{questions.length})</span>
+            <Layers size={14} />
+            <span style={{ fontSize: '0.8rem' }}>Bảng</span>
           </button>
 
           <button
-            className="btn btn-success"
+            className="btn btn-success btn-sm"
             onClick={() => setShowSubmitModal(true)}
+            style={{ padding: '6px 10px' }}
           >
-            <Send size={15} />
-            <span>Nộp bài</span>
+            <Send size={14} />
+            <span style={{ fontSize: '0.8rem' }}>Nộp bài</span>
           </button>
         </div>
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'minmax(0, 1fr) 280px', 
-        gap: 16,
-        alignItems: 'start'
-      }}>
-        {/* Left: Current Question Area */}
+      {/* Main Exam Layout */}
+      <div className="exam-layout-grid">
+        {/* Current Question Area */}
         {currentQ && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 68 }}>
             <QuestionCard
               question={currentQ}
               userAnswer={userAnswers[currentQ.id]}
@@ -371,58 +371,22 @@ export const ExamView: React.FC<ExamViewProps> = ({
               questionIndex={currentIndex}
               totalQuestions={questions.length}
             />
-
-            {/* Navigation buttons */}
-            <div className="card" style={{ 
-              padding: '12px 18px', 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              gap: 10,
-              flexWrap: 'wrap'
-            }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-                disabled={currentIndex === 0}
-              >
-                <ChevronLeft size={18} />
-                <span>Câu trước</span>
-              </button>
-
-              <button
-                className={`btn ${flaggedIds.includes(currentQ.id) ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                onClick={() => handleToggleFlag(currentQ.id)}
-              >
-                <Flag size={15} />
-                <span>{flaggedIds.includes(currentQ.id) ? 'Đã gắn cờ xem lại' : 'Đánh dấu xem lại'}</span>
-              </button>
-
-              <button
-                className="btn btn-secondary"
-                onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                disabled={currentIndex === questions.length - 1}
-              >
-                <span>Câu tiếp theo</span>
-                <ChevronRight size={18} />
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Right: Question Palette sidebar (Desktop) */}
-        <div className="card" style={{ padding: 18, position: 'sticky', top: 130 }}>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>
-            Danh sách câu hỏi ({answeredCount}/{questions.length})
+        {/* Right: Question Palette Sidebar (Visible on Desktop only) */}
+        <div className="card exam-sidebar-desktop" style={{ padding: 14, position: 'sticky', top: 120 }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>
+            Danh sách ({answeredCount}/{questions.length})
           </div>
 
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 6,
-            maxHeight: '55vh',
+            gap: 5,
+            maxHeight: '52vh',
             overflowY: 'auto',
-            paddingRight: 4
+            paddingRight: 2
           }}>
             {questions.map((q, idx) => {
               const ans = userAnswers[q.id];
@@ -455,52 +419,133 @@ export const ExamView: React.FC<ExamViewProps> = ({
           </div>
 
           <div style={{ 
-            marginTop: 16, 
+            marginTop: 12, 
             borderTop: '1px solid var(--border-color)', 
-            paddingTop: 12, 
-            fontSize: '0.775rem', 
+            paddingTop: 10, 
+            fontSize: '0.75rem', 
             color: 'var(--text-muted)', 
             display: 'flex', 
             flexDirection: 'column', 
-            gap: 6 
+            gap: 5 
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: 'var(--primary)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--primary)' }} />
               <span>Đã làm ({answeredCount})</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} />
               <span>Chưa làm ({unansweredCount})</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b' }} />
               <span>Đánh dấu xem lại ({flaggedIds.length})</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Drawer/Modal for Question Palette */}
+      {/* Sticky Bottom Thumb Bar during Exam */}
+      {currentQ && (
+        <div className="sticky-study-bar">
+          <button
+            className="btn btn-secondary"
+            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+            disabled={currentIndex === 0}
+            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
+            aria-label="Câu trước"
+          >
+            <ChevronLeft size={18} />
+            <span style={{ fontSize: '0.85rem' }}>Câu trước</span>
+          </button>
+
+          <button
+            className={`btn ${flaggedIds.includes(currentQ.id) ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => handleToggleFlag(currentQ.id)}
+            style={{ minHeight: 44, padding: '8px 12px', justifyContent: 'center' }}
+            title={flaggedIds.includes(currentQ.id) ? 'Bỏ cờ xem lại' : 'Gắn cờ xem lại'}
+            aria-label="Đánh dấu câu này"
+          >
+            <Flag size={15} fill={flaggedIds.includes(currentQ.id) ? 'currentColor' : 'none'} />
+            <span style={{ fontSize: '0.85rem' }}>{flaggedIds.includes(currentQ.id) ? 'Đã cờ' : 'Cờ'}</span>
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowMobilePalette(true)}
+            style={{ minHeight: 44, padding: '8px 12px', justifyContent: 'center' }}
+            title="Mở bảng câu hỏi"
+            aria-label="Mở bảng câu hỏi"
+          >
+            <Layers size={15} />
+            <span style={{ fontSize: '0.85rem' }}>Bảng</span>
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
+            disabled={currentIndex === questions.length - 1}
+            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
+            aria-label="Câu tiếp theo"
+          >
+            <span style={{ fontSize: '0.85rem' }}>Câu sau</span>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Bottom Sheet Drawer for Question Palette */}
       {showMobilePalette && (
-        <div className="modal-overlay" onClick={() => setShowMobilePalette(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title" style={{ fontSize: '1.1rem' }}>
-                Bảng câu hỏi ({answeredCount}/{questions.length})
+        <div className="bottom-sheet-overlay" onClick={() => setShowMobilePalette(false)}>
+          <div className="bottom-sheet-content" onClick={e => e.stopPropagation()}>
+            <div className="sheet-drag-handle" />
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              marginBottom: 10 
+            }}>
+              <div>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Bảng câu hỏi ({answeredCount}/{questions.length})
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Chạm vào số câu để chuyển nhanh
+                </div>
               </div>
-              <button className="modal-close" onClick={() => setShowMobilePalette(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowMobilePalette(false)}
+                title="Đóng bảng câu hỏi"
+              >
                 <X size={18} />
               </button>
             </div>
 
+            {/* Status Legend */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6, 1fr)',
-              gap: 8,
-              maxHeight: '60vh',
-              overflowY: 'auto',
-              marginBottom: 16
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '6px 0 10px',
+              borderBottom: '1px solid var(--border-color)',
+              marginBottom: 10,
+              fontSize: '0.75rem',
+              color: 'var(--text-secondary)'
             }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--primary)' }} /> Đã làm ({answeredCount})
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} /> Chưa làm ({unansweredCount})
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b' }} /> Cờ ({flaggedIds.length})
+              </span>
+            </div>
+
+            {/* Grid of question buttons */}
+            <div className="palette-grid" style={{ overflowY: 'auto', paddingRight: 2, maxHeight: '52vh' }}>
               {questions.map((q, idx) => {
                 const ans = userAnswers[q.id];
                 let hasAnswer = false;
@@ -533,26 +578,18 @@ export const ExamView: React.FC<ExamViewProps> = ({
                 );
               })}
             </div>
-
-            <button 
-              className="btn btn-secondary" 
-              style={{ width: '100%' }}
-              onClick={() => setShowMobilePalette(false)}
-            >
-              Đóng bảng
-            </button>
           </div>
         </div>
       )}
 
       {/* Submit Confirmation Modal */}
       {showSubmitModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="modal-overlay" onClick={() => setShowSubmitModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertTriangle size={22} color="var(--warning)" />
-                <span>Xác Nhận Nộp Bài Thi</span>
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.05rem' }}>
+                <AlertTriangle size={20} color="var(--warning)" />
+                <span>Xác nhận nộp bài thi</span>
               </div>
               <button
                 className="modal-close"
@@ -562,68 +599,69 @@ export const ExamView: React.FC<ExamViewProps> = ({
               </button>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: 14 }}>
-                Bạn có chắc chắn muốn kết thúc bài thi và nộp kết quả ngay bây giờ?
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 12 }}>
+                Bạn có chắc chắn muốn kết thúc bài thi và xem kết quả ngay?
               </p>
 
               <div style={{
-                padding: '14px 16px',
+                padding: '12px 14px',
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: unansweredCount > 0 ? 'var(--warning-light)' : 'var(--success-light)',
                 border: `1.5px solid ${unansweredCount > 0 ? 'var(--warning-border)' : 'var(--success-border)'}`,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 6,
-                fontSize: '0.9rem'
+                gap: 5,
+                fontSize: '0.85rem'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)' }}>
-                  <span>Tổng số câu hỏi:</span>
+                  <span>Tổng số câu:</span>
                   <strong>{questions.length}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-text)' }}>
-                  <span>Số câu đã trả lời:</span>
-                  <strong>{answeredCount} câu</strong>
+                  <span>Số câu đã làm:</span>
+                  <strong>{answeredCount}</strong>
                 </div>
                 <div style={{ 
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   color: unansweredCount > 0 ? 'var(--danger-text)' : 'var(--text-muted)' 
                 }}>
-                  <span>Số câu còn bỏ trống:</span>
-                  <strong>{unansweredCount} câu</strong>
+                  <span>Số câu chưa làm:</span>
+                  <strong>{unansweredCount}</strong>
                 </div>
               </div>
 
               {unansweredCount > 0 && (
                 <div style={{ 
-                  marginTop: 12, 
-                  fontSize: '0.85rem', 
+                  marginTop: 10, 
+                  fontSize: '0.8rem', 
                   color: 'var(--danger-text)', 
                   fontWeight: 600 
                 }}>
-                  Lưu ý: Bạn còn {unansweredCount} câu chưa trả lời. Những câu này sẽ bị tính là sai!
+                  Lưu ý: Có {unansweredCount} câu chưa làm sẽ bị tính 0 điểm!
                 </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-sm"
                 onClick={() => setShowSubmitModal(false)}
+                style={{ padding: '8px 14px' }}
               >
-                Tiếp tục làm bài
+                Làm tiếp
               </button>
 
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 onClick={() => {
                   setShowSubmitModal(false);
                   handleSubmitExam(false);
                 }}
-                style={{ backgroundColor: 'var(--success)' }}
+                style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)', padding: '8px 16px' }}
               >
-                Xác nhận nộp bài
+                Nộp bài thi
               </button>
             </div>
           </div>

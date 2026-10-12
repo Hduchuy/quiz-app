@@ -284,12 +284,12 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between', 
-        marginBottom: 16, 
-        gap: 12,
+        marginBottom: 10, 
+        gap: 8,
         flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 800, fontSize: '0.975rem', color: 'var(--text-primary)' }}>
             {questionIndex !== undefined ? `Câu ${questionIndex + 1}` : `Câu ${question.questionNumber}`}
             {totalQuestions ? ` / ${totalQuestions}` : ''}
           </span>
@@ -309,25 +309,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               border: 'none',
               cursor: 'pointer',
               color: isBookmarked ? '#f59e0b' : 'var(--text-subtle)',
-              padding: 6,
+              padding: 4,
               display: 'flex',
               alignItems: 'center',
               borderRadius: 'var(--radius-sm)',
               transition: 'all 0.15s ease'
             }}
           >
-            <Bookmark size={20} fill={isBookmarked ? '#f59e0b' : 'none'} />
+            <Bookmark size={18} fill={isBookmarked ? '#f59e0b' : 'none'} />
           </button>
         )}
       </div>
 
       {/* Question Text */}
       <div style={{ 
-        fontSize: '1.05rem', 
+        fontSize: '0.975rem', 
         fontWeight: 600, 
         color: 'var(--text-primary)', 
-        marginBottom: 20, 
-        lineHeight: 1.65,
+        marginBottom: 14, 
+        lineHeight: 1.55,
         wordBreak: 'break-word'
       }}>
         {question.questionText}
@@ -335,7 +335,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
       {/* ================= TYPE 1: SINGLE CHOICE ================= */}
       {question.type === 'single' && question.options && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {question.options.map((opt, idx) => {
             const isSelected = userAnswer?.selectedSingle === idx;
             const isCorrectAnswer = question.correctAnswers?.includes(idx);
@@ -373,15 +373,15 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {question.type === 'multiple' && question.options && (
         <div>
           <div style={{ 
-            fontSize: '0.85rem', 
+            fontSize: '0.8rem', 
             color: 'var(--text-muted)', 
-            marginBottom: 12,
+            marginBottom: 8,
             fontWeight: 600 
           }}>
             {`Đã chọn: ${(userAnswer?.selectedMultiple || []).length} / ${question.correctAnswers?.length || 2} phương án (Cần chọn đủ ${question.correctAnswers?.length || 2})`}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {question.options.map((opt, idx) => {
               const isSelected = (userAnswer?.selectedMultiple || []).includes(idx);
               const isCorrectAnswer = question.correctAnswers?.includes(idx);
@@ -418,7 +418,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
       {/* ================= TYPE 3: TRUE / FALSE ================= */}
       {question.type === 'true_false' && question.statements && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {question.statements.map(stmt => {
             const userChoice = userAnswer?.selectedTrueFalse?.[stmt.id];
             const isStmtAnswered = userChoice !== undefined;
@@ -795,8 +795,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       {/* Result & Explanation Feedback Banner */}
       {isShowingOverallResult && (
         <div style={{
-          marginTop: 20,
-          padding: '14px 18px',
+          marginTop: 14,
+          padding: '12px 14px',
           borderRadius: 'var(--radius-md)',
           backgroundColor: userAnswer?.isCorrect ? 'var(--success-light)' : 'var(--warning-light)',
           border: `1.5px solid ${userAnswer?.isCorrect ? 'var(--success-border)' : 'var(--warning-border)'}`,
@@ -810,25 +810,26 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             alignItems: 'center',
             gap: 8,
             fontWeight: 700,
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             color: userAnswer?.isCorrect ? 'var(--success-text)' : 'var(--warning-text)'
           }}>
             {userAnswer?.isCorrect ? (
               <>
-                <Check size={18} color="var(--success)" />
+                <Check size={16} color="var(--success)" />
                 <span>Chính xác! (+{(userAnswer.score ?? 1).toFixed(1)} điểm)</span>
               </>
             ) : (
               <>
-                <X size={18} color="var(--danger)" />
+                <X size={16} color="var(--danger)" />
                 <span>Chưa chính xác (Điểm: {(userAnswer?.score ?? 0).toFixed(1)})</span>
               </>
             )}
           </div>
 
           {question.explanation && (
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.55 }}>
-              <strong style={{ color: 'var(--text-primary)' }}>Giải thích:</strong> {question.explanation}
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Giải thích: </strong>
+              {question.explanation}
             </div>
           )}
         </div>

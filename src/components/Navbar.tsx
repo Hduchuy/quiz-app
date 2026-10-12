@@ -91,15 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ 
-                  fontSize: '1.05rem', 
-                  fontWeight: 800, 
-                  color: 'var(--text-primary)',
-                  maxWidth: '360px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
+                <span className="navbar-title-text">
                   {courseData.name}
                 </span>
                 <button

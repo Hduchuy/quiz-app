@@ -57,95 +57,92 @@ export const ResultView: React.FC<ResultViewProps> = ({
       </div>
 
       {/* Primary Score Board */}
-      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
+      <div className="card" style={{ padding: '20px 16px', textAlign: 'center' }}>
         <div style={{
           display: 'inline-flex',
-          padding: '6px 18px',
+          padding: '4px 14px',
           borderRadius: 20,
           backgroundColor: rating.bg,
           color: rating.color,
           border: `1px solid ${rating.border}`,
           fontWeight: 700,
-          fontSize: '0.9rem',
-          marginBottom: 16
+          fontSize: '0.85rem',
+          marginBottom: 10
         }}>
           Kết quả: {rating.label}
         </div>
 
-        <div style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+        <div style={{ fontSize: '2.75rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
           {examRecord.score.toFixed(1)}
-          <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}> / 10</span>
+          <span style={{ fontSize: '1.25rem', color: 'var(--text-muted)', fontWeight: 600 }}> / 10</span>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.975rem', marginTop: 12 }}>
-          Đạt: <strong>{examRecord.percentage}%</strong> • Thời gian làm bài: <strong>{Math.floor(examRecord.timeSpentSeconds / 60)} phút {examRecord.timeSpentSeconds % 60} giây</strong>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 8 }}>
+          Đạt: <strong>{examRecord.percentage}%</strong> • Làm bài: <strong>{Math.floor(examRecord.timeSpentSeconds / 60)}p {examRecord.timeSpentSeconds % 60}s</strong>
         </p>
 
-        {/* 4 Stat Badges */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 12,
-          maxWidth: 600,
-          margin: '24px auto 0'
-        }}>
+        {/* 4 Stat Badges (2x2 on mobile, 4 on desktop) */}
+        <div className="exam-stats-summary-grid" style={{ maxWidth: 600, margin: '16px auto 0' }}>
           <div style={{ 
-            padding: 12, 
+            padding: '8px 10px', 
             borderRadius: 'var(--radius-md)', 
             backgroundColor: 'var(--bg-card-subtle)', 
             border: '1px solid var(--border-color)' 
           }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Tổng số câu</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{examRecord.totalQuestions}</div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 600 }}>Tổng câu</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>{examRecord.totalQuestions}</div>
           </div>
 
           <div style={{ 
-            padding: 12, 
+            padding: '8px 10px', 
             borderRadius: 'var(--radius-md)', 
             backgroundColor: 'var(--success-light)', 
             border: '1px solid var(--success-border)' 
           }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--success-text)', fontWeight: 600 }}>Đúng</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success)' }}>{examRecord.correctCount}</div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--success-text)', fontWeight: 600 }}>Đúng</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--success)' }}>{examRecord.correctCount}</div>
           </div>
 
           <div style={{ 
-            padding: 12, 
+            padding: '8px 10px', 
             borderRadius: 'var(--radius-md)', 
             backgroundColor: 'var(--danger-light)', 
             border: '1px solid var(--danger-border)' 
           }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--danger-text)', fontWeight: 600 }}>Sai</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--danger)' }}>{examRecord.incorrectCount}</div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--danger-text)', fontWeight: 600 }}>Sai</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--danger)' }}>{examRecord.incorrectCount}</div>
           </div>
 
           <div style={{ 
-            padding: 12, 
+            padding: '8px 10px', 
             borderRadius: 'var(--radius-md)', 
             backgroundColor: 'var(--bg-card-subtle)', 
             border: '1px solid var(--border-color)' 
           }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Bỏ trống</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-muted)' }}>{examRecord.unansweredCount}</div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 600 }}>Bỏ trống</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-muted)' }}>{examRecord.unansweredCount}</div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
           {wrongQuestionIds.length > 0 && (
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm"
               onClick={() => onRetryWrongQuestions(wrongQuestionIds)}
               style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger)' }}
             >
-              <RotateCcw size={16} />
-              <span>Luyện lại {wrongQuestionIds.length} câu đã làm sai</span>
+              <RotateCcw size={15} />
+              <span>Luyện lại {wrongQuestionIds.length} câu sai</span>
             </button>
           )}
 
-          <button className="btn btn-secondary" onClick={onRetakeExam}>
-            <Award size={16} />
-            <span>Làm đề thi mới</span>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={onRetakeExam}
+          >
+            <Award size={15} />
+            <span>Thi lại đề mới</span>
           </button>
         </div>
       </div>

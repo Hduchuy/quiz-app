@@ -146,159 +146,173 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
       width: '100%', 
       display: 'flex', 
       flexDirection: 'column', 
-      gap: 16 
+      gap: 10 
     }}>
-      {/* Top Header & Filter Controls Card */}
-      <div className="card" style={{ padding: '16px 20px' }}>
+      {/* Ultra-Compact Top Header Bar */}
+      <div className="card" style={{ padding: '10px 12px' }}>
+        {/* Row 1: Back, Topic dropdown, Shuffle, Bookmark & Palette Drawer Button */}
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between', 
-          gap: 12, 
-          flexWrap: 'wrap', 
-          marginBottom: 14 
+          gap: 8, 
+          marginBottom: 8 
         }}>
           <button
             onClick={onBackToHome}
             className="btn btn-secondary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            style={{ padding: '6px 10px', flexShrink: 0 }}
+            title="Quay lại trang chủ"
           >
-            <ArrowLeft size={16} />
-            <span>Trang chủ</span>
+            <ArrowLeft size={15} />
+            <span style={{ fontSize: '0.8rem' }}>Về</span>
           </button>
 
           {/* Topic Select */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 220 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <select
               value={selectedTopicId}
               onChange={(e) => setSelectedTopicId(e.target.value)}
               className="input-text"
               style={{
-                padding: '6px 12px',
-                fontSize: '0.875rem',
-                fontWeight: 600
+                padding: '5px 8px',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap'
               }}
             >
-              <option value="all">Tất cả chủ đề ({courseData.topics.flatMap(t => t.questions).length} câu)</option>
+              <option value="all">Tất cả ({courseData.topics.flatMap(t => t.questions).length} câu)</option>
               {courseData.topics.map((t, idx) => (
                 <option key={t.id} value={t.id}>
-                  Chủ đề {idx + 1}: {t.title.slice(0, 45)}... ({t.questions.length} câu)
+                  CĐ {idx + 1}: {t.title} ({t.questions.length} câu)
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Controls: Auto-Show Answer Toggle & Shuffle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {/* Auto-show Answer Switch */}
+          {/* Shuffle Toggle */}
+          <button
+            className={`btn btn-sm ${isShuffle ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setIsShuffle(prev => !prev)}
+            title="Đảo ngẫu nhiên thứ tự câu hỏi"
+            style={{ padding: '6px 8px', flexShrink: 0 }}
+          >
+            <Shuffle size={14} />
+          </button>
+
+          {/* Palette Drawer Trigger */}
+          <button
+            className={`btn btn-sm ${showPalette ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setShowPalette(true)}
+            style={{ padding: '6px 10px', flexShrink: 0 }}
+            title="Mở bảng câu hỏi"
+          >
+            <Layers size={14} />
+            <span style={{ fontSize: '0.8rem' }}>Bảng</span>
+          </button>
+        </div>
+
+        {/* Row 2: Filter Chips, Auto-show Switch, and Question Counter */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          gap: 6, 
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <button
+              className={`nav-btn btn-sm ${filterMode === 'all' ? 'active' : ''}`}
+              onClick={() => setFilterMode('all')}
+              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+            >
+              Tất cả
+            </button>
+
+            <button
+              className={`nav-btn btn-sm ${filterMode === 'unanswered' ? 'active' : ''}`}
+              onClick={() => setFilterMode('unanswered')}
+              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+            >
+              Chưa làm
+            </button>
+
+            <button
+              className={`nav-btn btn-sm ${filterMode === 'wrong' ? 'active' : ''}`}
+              onClick={() => setFilterMode('wrong')}
+              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+            >
+              Sai
+            </button>
+
+            <button
+              className={`nav-btn btn-sm ${filterMode === 'bookmarked' ? 'active' : ''}`}
+              onClick={() => setFilterMode('bookmarked')}
+              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+            >
+              Lưu ({studyProgress.bookmarkedQuestionIds.length})
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+            {/* Compact Auto-show Answer Switch */}
             <div
               onClick={handleToggleAutoShow}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 5,
                 cursor: 'pointer',
                 userSelect: 'none',
-                padding: '6px 12px',
-                borderRadius: 'var(--radius-sm)',
+                padding: '3px 7px',
+                borderRadius: 'var(--radius-xs)',
                 backgroundColor: autoShowAnswer ? 'var(--primary-light)' : 'var(--bg-card-subtle)',
-                border: `1.5px solid ${autoShowAnswer ? 'var(--primary)' : 'var(--border-color)'}`,
-                fontSize: '0.825rem',
+                border: `1px solid ${autoShowAnswer ? 'var(--primary)' : 'var(--border-color)'}`,
+                fontSize: '0.75rem',
                 fontWeight: 600,
-                color: autoShowAnswer ? 'var(--primary)' : 'var(--text-secondary)',
-                transition: 'all 0.15s ease'
+                color: autoShowAnswer ? 'var(--primary)' : 'var(--text-secondary)'
               }}
               title="Tự động hiển thị kết quả đúng/sai ngay sau khi bạn hoàn thành lựa chọn"
             >
+              <span>Hiện ĐA</span>
               <div style={{
-                width: 32,
-                height: 18,
-                borderRadius: 10,
+                width: 26,
+                height: 14,
+                borderRadius: 8,
                 backgroundColor: autoShowAnswer ? 'var(--primary)' : 'var(--border-subtle)',
                 position: 'relative',
                 transition: 'background-color 0.2s ease',
                 flexShrink: 0
               }}>
                 <div style={{
-                  width: 14,
-                  height: 14,
+                  width: 10,
+                  height: 10,
                   borderRadius: '50%',
                   backgroundColor: '#ffffff',
                   position: 'absolute',
                   top: 2,
-                  left: autoShowAnswer ? 16 : 2,
-                  transition: 'left 0.2s ease',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                  left: autoShowAnswer ? 14 : 2,
+                  transition: 'left 0.2s ease'
                 }} />
               </div>
-              <span>Hiện đáp án: {autoShowAnswer ? 'Bật' : 'Tắt'}</span>
             </div>
 
-            {/* Shuffle Toggle */}
-            <button
-              className={`btn btn-sm ${isShuffle ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setIsShuffle(prev => !prev)}
-              title="Đảo ngẫu nhiên thứ tự câu hỏi"
-            >
-              <Shuffle size={14} />
-              <span>Trộn</span>
-            </button>
+            {/* Question Counter */}
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, flexShrink: 0 }}>
+              {filteredQuestions.length > 0 ? (
+                <span><strong>{currentIndex + 1}</strong>/{filteredQuestions.length}</span>
+              ) : (
+                <span>0 câu</span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Filter Tabs & Question Count */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 6, 
-          flexWrap: 'wrap', 
-          borderTop: '1px solid var(--border-color)', 
-          paddingTop: 12 
-        }}>
-          <span style={{ fontSize: '0.825rem', color: 'var(--text-muted)', fontWeight: 600, marginRight: 4 }}>
-            Lọc:
-          </span>
-          
-          <button
-            className={`nav-btn btn-sm ${filterMode === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterMode('all')}
-          >
-            Tất cả
-          </button>
-
-          <button
-            className={`nav-btn btn-sm ${filterMode === 'unanswered' ? 'active' : ''}`}
-            onClick={() => setFilterMode('unanswered')}
-          >
-            Chưa làm
-          </button>
-
-          <button
-            className={`nav-btn btn-sm ${filterMode === 'wrong' ? 'active' : ''}`}
-            onClick={() => setFilterMode('wrong')}
-          >
-            Đã làm sai
-          </button>
-
-          <button
-            className={`nav-btn btn-sm ${filterMode === 'bookmarked' ? 'active' : ''}`}
-            onClick={() => setFilterMode('bookmarked')}
-          >
-            Đã lưu ({studyProgress.bookmarkedQuestionIds.length})
-          </button>
-
-          <div style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-            {filteredQuestions.length > 0 ? (
-              <span>Câu <strong>{currentIndex + 1}</strong> / {filteredQuestions.length} ({progressPercent}%)</span>
-            ) : (
-              <span>0 câu</span>
-            )}
-          </div>
-        </div>
-
-        {/* Progress Bar under filters */}
+        {/* Thin 3px Progress Line */}
         {filteredQuestions.length > 0 && (
-          <div className="progress-bar-bg" style={{ marginTop: 10, height: 4 }}>
+          <div className="progress-bar-bg" style={{ marginTop: 8, height: 3 }}>
             <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
           </div>
         )}
@@ -306,11 +320,11 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
 
       {/* Main Question Display Area */}
       {filteredQuestions.length === 0 ? (
-        <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
+        <div className="card" style={{ padding: '40px 18px', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
             Không có câu hỏi nào theo bộ lọc đã chọn
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: 20 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 16 }}>
             {filterMode === 'wrong'
               ? 'Tuyệt vời! Bạn chưa có câu nào làm sai hoặc đã ôn hết danh sách sai.'
               : filterMode === 'bookmarked'
@@ -318,14 +332,14 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
               : 'Hãy thử chọn chủ đề khác hoặc đổi bộ lọc.'}
           </p>
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
             onClick={() => setFilterMode('all')}
           >
             Xem tất cả câu hỏi
           </button>
         </div>
       ) : currentQuestion ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 68 }}>
           {/* Question Card */}
           <QuestionCard
             question={currentQuestion}
@@ -340,127 +354,157 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             questionIndex={currentIndex}
             totalQuestions={filteredQuestions.length}
           />
-
-          {/* Action Bar below Question Card */}
-          <div className="card" style={{
-            padding: '12px 18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
-            flexWrap: 'wrap'
-          }}>
-            {/* Navigation Buttons: Previous / Next */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="btn btn-secondary"
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-              >
-                <ChevronLeft size={18} />
-                <span>Câu trước</span>
-              </button>
-
-              <button
-                className="btn btn-secondary"
-                onClick={handleNext}
-                disabled={currentIndex === filteredQuestions.length - 1}
-              >
-                <span>Câu sau</span>
-                <ChevronRight size={18} />
-              </button>
-            </div>
-
-            {/* Redo, Check Answer & Palette Toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={handleResetCurrent}
-                title="Làm lại câu hỏi này"
-              >
-                <RotateCcw size={15} />
-                <span>Làm lại</span>
-              </button>
-
-              <button
-                className={`btn ${showAnswer ? 'btn-secondary' : 'btn-success'}`}
-                onClick={() => setShowAnswer(prev => !prev)}
-              >
-                <CheckCircle size={16} />
-                <span>{showAnswer ? 'Ẩn đáp án' : 'Kiểm tra đáp án'}</span>
-              </button>
-
-              <button
-                className={`btn ${showPalette ? 'btn-primary' : 'btn-outline'} btn-sm`}
-                onClick={() => setShowPalette(prev => !prev)}
-              >
-                <Layers size={15} />
-                <span>{showPalette ? 'Đóng bảng' : 'Bảng câu hỏi'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Collapsible Question Palette Grid */}
-          {showPalette && (
-            <div className="card" style={{ padding: 20 }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                marginBottom: 12 
-              }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Bảng điều hướng nhanh ({filteredQuestions.length} câu):
-                </div>
-                <button
-                  className="modal-close"
-                  onClick={() => setShowPalette(false)}
-                  title="Đóng bảng câu hỏi"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="palette-grid">
-                {filteredQuestions.map((q, idx) => {
-                  const ans = studyProgress.answeredQuestions[q.id];
-                  const isCurrent = idx === currentIndex;
-                  const isBookmarked = studyProgress.bookmarkedQuestionIds.includes(q.id);
-
-                  let itemClass = 'palette-item';
-                  if (isCurrent) itemClass += ' current';
-                  if (ans && ans.isCorrect !== undefined) {
-                    itemClass += ' answered';
-                  }
-                  if (isBookmarked) itemClass += ' flagged';
-
-                  return (
-                    <div
-                      key={q.id}
-                      className={itemClass}
-                      onClick={() => {
-                        setCurrentIndex(idx);
-                        setShowAnswer(false);
-                      }}
-                      style={{
-                        backgroundColor: ans?.isCorrect === true 
-                          ? 'var(--success)' 
-                          : ans?.isCorrect === false 
-                          ? 'var(--danger)' 
-                          : undefined,
-                        color: ans ? '#ffffff' : undefined,
-                        borderColor: ans ? 'transparent' : undefined
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       ) : null}
+
+      {/* Sticky Bottom Thumb Navigation Bar */}
+      {filteredQuestions.length > 0 && (
+        <div className="sticky-study-bar">
+          {/* Previous Question Button */}
+          <button
+            className="btn btn-secondary"
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
+            aria-label="Câu trước"
+          >
+            <ChevronLeft size={18} />
+            <span style={{ fontSize: '0.85rem' }}>Câu trước</span>
+          </button>
+
+          {/* Reset / Redo button if answered */}
+          {currentAnswerRecord && currentAnswerRecord.answeredAt && (
+            <button
+              className="btn btn-secondary"
+              onClick={handleResetCurrent}
+              title="Làm lại câu này"
+              aria-label="Làm lại câu này"
+              style={{ minHeight: 44, width: 44, padding: 0, justifyContent: 'center' }}
+            >
+              <RotateCcw size={16} />
+            </button>
+          )}
+
+          {/* Check / Toggle Answer Button */}
+          <button
+            className={`btn ${showAnswer ? 'btn-secondary' : 'btn-success'}`}
+            onClick={() => setShowAnswer(prev => !prev)}
+            style={{ padding: '8px 12px', minHeight: 44, flex: 1.2, justifyContent: 'center' }}
+            aria-label={showAnswer ? 'Ẩn đáp án' : 'Kiểm tra đáp án'}
+          >
+            <CheckCircle size={16} />
+            <span style={{ fontSize: '0.85rem' }}>{showAnswer ? 'Ẩn ĐA' : 'Kiểm tra'}</span>
+          </button>
+
+          {/* Next Question Button */}
+          <button
+            className="btn btn-secondary"
+            onClick={handleNext}
+            disabled={currentIndex === filteredQuestions.length - 1}
+            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
+            aria-label="Câu sau"
+          >
+            <span style={{ fontSize: '0.85rem' }}>Câu sau</span>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Question Palette Bottom Sheet Drawer */}
+      {showPalette && (
+        <div className="bottom-sheet-overlay" onClick={() => setShowPalette(false)}>
+          <div className="bottom-sheet-content" onClick={e => e.stopPropagation()}>
+            <div className="sheet-drag-handle" />
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              marginBottom: 10 
+            }}>
+              <div>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Bảng câu hỏi ({filteredQuestions.length} câu)
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  Chạm vào số câu để chuyển nhanh
+                </div>
+              </div>
+              <button
+                className="modal-close"
+                onClick={() => setShowPalette(false)}
+                title="Đóng bảng câu hỏi"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Status Legend */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '6px 0 10px',
+              borderBottom: '1px solid var(--border-color)',
+              marginBottom: 10,
+              fontSize: '0.75rem',
+              color: 'var(--text-secondary)'
+            }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--success)' }} /> Đúng
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--danger)' }} /> Sai
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }} /> Chưa làm
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b' }} /> Lưu
+              </span>
+            </div>
+
+            {/* Palette Grid */}
+            <div className="palette-grid" style={{ overflowY: 'auto', paddingRight: 2, maxHeight: '52vh' }}>
+              {filteredQuestions.map((q, idx) => {
+                const ans = studyProgress.answeredQuestions[q.id];
+                const isCurrent = idx === currentIndex;
+                const isBookmarked = studyProgress.bookmarkedQuestionIds.includes(q.id);
+
+                let itemClass = 'palette-item';
+                if (isCurrent) itemClass += ' current';
+                if (ans && ans.isCorrect !== undefined) {
+                  itemClass += ' answered';
+                }
+                if (isBookmarked) itemClass += ' flagged';
+
+                return (
+                  <div
+                    key={q.id}
+                    className={itemClass}
+                    onClick={() => {
+                      setCurrentIndex(idx);
+                      setShowAnswer(false);
+                      setShowPalette(false);
+                    }}
+                    style={{
+                      backgroundColor: ans?.isCorrect === true 
+                        ? 'var(--success)' 
+                        : ans?.isCorrect === false 
+                        ? 'var(--danger)' 
+                        : undefined,
+                      color: ans ? '#ffffff' : undefined,
+                      borderColor: ans ? 'transparent' : undefined
+                    }}
+                  >
+                    {idx + 1}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

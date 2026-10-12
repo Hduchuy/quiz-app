@@ -140,7 +140,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main View Container */}
-      <main className="main-content">
+      <main className={`main-content ${currentView === 'practice' || currentView === 'exam' ? 'study-mode' : ''}`}>
         {currentView === 'home' && (
           <HomeView
             courseData={courseData}
@@ -197,53 +197,57 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="bottom-nav" aria-label="Điều hướng chính di động">
-        <button
-          className={`bottom-nav-item ${currentView === 'home' ? 'active' : ''}`}
-          onClick={() => setCurrentView('home')}
-        >
-          <BookOpen size={20} />
-          <span>Tổng quan</span>
-        </button>
+      {/* Mobile Bottom Navigation Bar (Hidden during practice and exam sessions to prioritize thumb controls) */}
+      {currentView !== 'practice' && currentView !== 'exam' && (
+        <nav className="bottom-nav" aria-label="Điều hướng chính di động">
+          <button
+            className={`bottom-nav-item ${currentView === 'home' ? 'active' : ''}`}
+            onClick={() => setCurrentView('home')}
+          >
+            <BookOpen size={20} />
+            <span>Trang chủ</span>
+          </button>
 
-        <button
-          className={`bottom-nav-item ${currentView === 'practice' ? 'active' : ''}`}
-          onClick={() => setCurrentView('practice')}
-        >
-          <FileText size={20} />
-          <span>Luyện tập</span>
-        </button>
+          <button
+            className="bottom-nav-item"
+            onClick={() => setCurrentView('practice')}
+          >
+            <FileText size={20} />
+            <span>Luyện tập</span>
+          </button>
 
-        <button
-          className={`bottom-nav-item ${currentView === 'exam' || currentView === 'result' ? 'active' : ''}`}
-          onClick={() => setCurrentView('exam')}
-        >
-          <GraduationCap size={20} />
-          <span>Thi thử</span>
-        </button>
+          <button
+            className={`bottom-nav-item ${currentView === 'result' ? 'active' : ''}`}
+            onClick={() => setCurrentView('exam')}
+          >
+            <GraduationCap size={20} />
+            <span>Thi thử</span>
+          </button>
 
-        <button
-          className={`bottom-nav-item ${currentView === 'bank' ? 'active' : ''}`}
-          onClick={() => setCurrentView('bank')}
-        >
-          <Database size={20} />
-          <span>Ngân hàng</span>
-        </button>
-      </nav>
+          <button
+            className={`bottom-nav-item ${currentView === 'bank' ? 'active' : ''}`}
+            onClick={() => setCurrentView('bank')}
+          >
+            <Database size={20} />
+            <span>Ngân hàng</span>
+          </button>
+        </nav>
+      )}
 
-      {/* Footer */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '24px 20px',
-        borderTop: '1px solid var(--border-color)',
-        color: 'var(--text-subtle)',
-        fontSize: '0.825rem',
-        backgroundColor: 'var(--bg-surface)',
-        transition: 'var(--transition-theme)'
-      }}>
-        Ứng dụng Ôn tập & Thi thử Trắc nghiệm Cá nhân • Hỗ trợ hoàn toàn Offline
-      </footer>
+      {/* Footer (Hidden during study/exam mode) */}
+      {currentView !== 'practice' && currentView !== 'exam' && (
+        <footer style={{
+          textAlign: 'center',
+          padding: '18px 16px calc(18px + var(--safe-bottom))',
+          borderTop: '1px solid var(--border-color)',
+          color: 'var(--text-subtle)',
+          fontSize: '0.8rem',
+          backgroundColor: 'var(--bg-surface)',
+          transition: 'var(--transition-theme)'
+        }}>
+          Ứng dụng Ôn tập & Thi thử Trắc nghiệm Cá nhân • Hỗ trợ hoàn toàn Offline
+        </footer>
+      )}
     </div>
   );
 };
