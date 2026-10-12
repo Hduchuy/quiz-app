@@ -339,7 +339,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           </button>
         </div>
       ) : currentQuestion ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 68 }}>
+        <div className="study-question-scroll-wrapper">
           {/* Question Card */}
           <QuestionCard
             question={currentQuestion}
@@ -357,56 +357,58 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
         </div>
       ) : null}
 
-      {/* Sticky Bottom Thumb Navigation Bar */}
+      {/* Fixed Bottom Thumb Navigation Bar */}
       {filteredQuestions.length > 0 && (
         <div className="sticky-study-bar">
-          {/* Previous Question Button */}
-          <button
-            className="btn btn-secondary"
-            onClick={handlePrev}
-            disabled={currentIndex === 0}
-            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
-            aria-label="Câu trước"
-          >
-            <ChevronLeft size={18} />
-            <span style={{ fontSize: '0.85rem' }}>Câu trước</span>
-          </button>
-
-          {/* Reset / Redo button if answered */}
-          {currentAnswerRecord && currentAnswerRecord.answeredAt && (
+          <div className="sticky-study-bar-inner">
+            {/* Previous Question Button */}
             <button
               className="btn btn-secondary"
-              onClick={handleResetCurrent}
-              title="Làm lại câu này"
-              aria-label="Làm lại câu này"
-              style={{ minHeight: 44, width: 44, padding: 0, justifyContent: 'center' }}
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              style={{ padding: '8px 10px', minHeight: 44, flex: '1 1 auto', justifyContent: 'center' }}
+              aria-label="Câu trước"
             >
-              <RotateCcw size={16} />
+              <ChevronLeft size={18} />
+              <span className="study-btn-text">Câu trước</span>
             </button>
-          )}
 
-          {/* Check / Toggle Answer Button */}
-          <button
-            className={`btn ${showAnswer ? 'btn-secondary' : 'btn-success'}`}
-            onClick={() => setShowAnswer(prev => !prev)}
-            style={{ padding: '8px 12px', minHeight: 44, flex: 1.2, justifyContent: 'center' }}
-            aria-label={showAnswer ? 'Ẩn đáp án' : 'Kiểm tra đáp án'}
-          >
-            <CheckCircle size={16} />
-            <span style={{ fontSize: '0.85rem' }}>{showAnswer ? 'Ẩn ĐA' : 'Kiểm tra'}</span>
-          </button>
+            {/* Reset / Redo button if answered */}
+            {currentAnswerRecord && currentAnswerRecord.answeredAt && (
+              <button
+                className="btn btn-secondary"
+                onClick={handleResetCurrent}
+                title="Làm lại câu này"
+                aria-label="Làm lại câu này"
+                style={{ minHeight: 44, width: 44, padding: 0, justifyContent: 'center', flexShrink: 0 }}
+              >
+                <RotateCcw size={16} />
+              </button>
+            )}
 
-          {/* Next Question Button */}
-          <button
-            className="btn btn-secondary"
-            onClick={handleNext}
-            disabled={currentIndex === filteredQuestions.length - 1}
-            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
-            aria-label="Câu sau"
-          >
-            <span style={{ fontSize: '0.85rem' }}>Câu sau</span>
-            <ChevronRight size={18} />
-          </button>
+            {/* Check / Toggle Answer Button */}
+            <button
+              className={`btn ${showAnswer ? 'btn-secondary' : 'btn-success'}`}
+              onClick={() => setShowAnswer(prev => !prev)}
+              style={{ padding: '8px 10px', minHeight: 44, flex: '1.2 1 auto', justifyContent: 'center' }}
+              aria-label={showAnswer ? 'Ẩn đáp án' : 'Kiểm tra đáp án'}
+            >
+              <CheckCircle size={16} />
+              <span className="study-btn-text">{showAnswer ? 'Ẩn ĐA' : 'Kiểm tra'}</span>
+            </button>
+
+            {/* Next Question Button */}
+            <button
+              className="btn btn-secondary"
+              onClick={handleNext}
+              disabled={currentIndex === filteredQuestions.length - 1}
+              style={{ padding: '8px 10px', minHeight: 44, flex: '1 1 auto', justifyContent: 'center' }}
+              aria-label="Câu sau"
+            >
+              <span className="study-btn-text">Câu sau</span>
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       )}
 

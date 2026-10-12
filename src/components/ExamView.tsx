@@ -358,7 +358,7 @@ export const ExamView: React.FC<ExamViewProps> = ({
       <div className="exam-layout-grid">
         {/* Current Question Area */}
         {currentQ && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 68 }}>
+          <div className="study-question-scroll-wrapper">
             <QuestionCard
               question={currentQ}
               userAnswer={userAnswers[currentQ.id]}
@@ -444,52 +444,54 @@ export const ExamView: React.FC<ExamViewProps> = ({
         </div>
       </div>
 
-      {/* Sticky Bottom Thumb Bar during Exam */}
+      {/* Fixed Bottom Thumb Bar during Exam */}
       {currentQ && (
         <div className="sticky-study-bar">
-          <button
-            className="btn btn-secondary"
-            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-            disabled={currentIndex === 0}
-            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
-            aria-label="Câu trước"
-          >
-            <ChevronLeft size={18} />
-            <span style={{ fontSize: '0.85rem' }}>Câu trước</span>
-          </button>
+          <div className="sticky-study-bar-inner">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentIndex === 0}
+              style={{ padding: '8px 10px', minHeight: 44, flex: '1 1 auto', justifyContent: 'center' }}
+              aria-label="Câu trước"
+            >
+              <ChevronLeft size={18} />
+              <span className="study-btn-text">Câu trước</span>
+            </button>
 
-          <button
-            className={`btn ${flaggedIds.includes(currentQ.id) ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => handleToggleFlag(currentQ.id)}
-            style={{ minHeight: 44, padding: '8px 12px', justifyContent: 'center' }}
-            title={flaggedIds.includes(currentQ.id) ? 'Bỏ cờ xem lại' : 'Gắn cờ xem lại'}
-            aria-label="Đánh dấu câu này"
-          >
-            <Flag size={15} fill={flaggedIds.includes(currentQ.id) ? 'currentColor' : 'none'} />
-            <span style={{ fontSize: '0.85rem' }}>{flaggedIds.includes(currentQ.id) ? 'Đã cờ' : 'Cờ'}</span>
-          </button>
+            <button
+              className={`btn ${flaggedIds.includes(currentQ.id) ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => handleToggleFlag(currentQ.id)}
+              style={{ minHeight: 44, padding: '8px 10px', justifyContent: 'center', flex: '0 0 auto' }}
+              title={flaggedIds.includes(currentQ.id) ? 'Bỏ cờ xem lại' : 'Gắn cờ xem lại'}
+              aria-label="Đánh dấu câu này"
+            >
+              <Flag size={15} fill={flaggedIds.includes(currentQ.id) ? 'currentColor' : 'none'} />
+              <span className="study-btn-text">{flaggedIds.includes(currentQ.id) ? 'Đã cờ' : 'Cờ'}</span>
+            </button>
 
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowMobilePalette(true)}
-            style={{ minHeight: 44, padding: '8px 12px', justifyContent: 'center' }}
-            title="Mở bảng câu hỏi"
-            aria-label="Mở bảng câu hỏi"
-          >
-            <Layers size={15} />
-            <span style={{ fontSize: '0.85rem' }}>Bảng</span>
-          </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowMobilePalette(true)}
+              style={{ minHeight: 44, padding: '8px 10px', justifyContent: 'center', flex: '0 0 auto' }}
+              title="Mở bảng câu hỏi"
+              aria-label="Mở bảng câu hỏi"
+            >
+              <Layers size={15} />
+              <span className="study-btn-text">Bảng</span>
+            </button>
 
-          <button
-            className="btn btn-secondary"
-            onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
-            disabled={currentIndex === questions.length - 1}
-            style={{ padding: '8px 12px', minHeight: 44, flex: 1, justifyContent: 'center' }}
-            aria-label="Câu tiếp theo"
-          >
-            <span style={{ fontSize: '0.85rem' }}>Câu sau</span>
-            <ChevronRight size={18} />
-          </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1))}
+              disabled={currentIndex === questions.length - 1}
+              style={{ padding: '8px 10px', minHeight: 44, flex: '1 1 auto', justifyContent: 'center' }}
+              aria-label="Câu tiếp theo"
+            >
+              <span className="study-btn-text">Câu sau</span>
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       )}
 
