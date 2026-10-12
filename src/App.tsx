@@ -1,227 +1,251 @@
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import { Topbar, Sidebar, StatusBar, SIDEBAR_WIDTH, TOPBAR_HEIGHT, BOTTOMBAR_HEIGHT } from '@/components/layout';
-import { ToastContainer, Input, Badge } from '@/components/ui';
-import { RestoreSessionModal } from '@/components/ui/RestoreSessionModal';
-import { LandingPage } from '@/pages/Landing';
-import { EditorPage } from '@/pages/Editor';
-import { TestRunnerPage } from '@/pages/TestRunner';
-import { ResultsPage } from '@/pages/Results';
-import { TestLayout } from '@/components/test';
-import { useQuizStore } from '@/stores/quizStore';
-import { useEditorStore } from '@/stores/editorStore';
-import { useSessionManager } from '@/hooks/useSessionManager';
-import { useState, useEffect } from 'react';
-import { cn } from '@/utils/helpers';
-import { ListChecks, CheckCircle, LayoutGrid, Type } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CourseData, StudyProgress, ExamRecord, UserAnswerRecord } from './types/quiz';
+import { 
+  loadCourseData, 
+  saveCourseData, 
+  loadStudyProgress, 
+  recordQuestionAnswer, 
+  toggleBookmarkQuestion, 
+  loadExamHistory, 
+  saveExamResult, 
+  updateCourseName 
+} from './utils/storage';
+import { 
+  ThemeMode, 
+  getSavedTheme, 
+  saveTheme, 
+  applyTheme, 
+  initThemeListener 
+} from './utils/theme';
+import { Navbar } from './components/Navbar';
+import { HomeView } from './components/HomeView';
+import { PracticeView } from './components/PracticeView';
+import { ExamView } from './components/ExamView';
+import { ResultView } from './components/ResultView';
+import { BankManagerView } from './components/BankManagerView';
+import { BookOpen, FileText, GraduationCap, Database } from 'lucide-react';
 
-const FILTER_BAR_HEIGHT = 56;
+export const App: React.FC = () => {
+  const [courseData, setCourseData] = useState<CourseData>(() => loadCourseData());
+  const [studyProgress, setStudyProgress] = useState<StudyProgress>(() => loadStudyProgress());
+  const [examHistory, setExamHistory] = useState<ExamRecord[]>(() => loadExamHistory());
+  const [currentView, setCurrentView] = useState<'home' | 'practice' | 'exam' | 'bank' | 'result'>('home');
 
-function SessionRestoreHandler() {
-  const navigate = useNavigate();
-  const { checkSession, restoreSession, discardSession } = useSessionManager();
-  const [sessionData, setSessionData] = useState<ReturnType<typeof checkSession>>(null);
-  const [showModal, setShowModal] = useState(false);
+  // Theme state
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const saved = getSavedTheme();
+    applyTheme(saved);
+    return saved;
+  });
 
   useEffect(() => {
-    const session = checkSession();
-    if (session) {
-      setSessionData(session);
-      setShowModal(true);
-    }
-  }, [checkSession]);
+    applyTheme(themeMode);
+    const unbind = initThemeListener();
+    return () => unbind();
+  }, [themeMode]);
 
-  const handleRestore = () => {
-    if (sessionData) {
-      restoreSession(sessionData);
-      navigate(sessionData.lastPath);
-    }
-    setShowModal(false);
+  const handleThemeChange = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    saveTheme(mode);
+    applyTheme(mode);
   };
 
-  const handleDiscard = () => {
-    discardSession();
-    setShowModal(false);
-    // Navigate to clean home page so the user doesn't stay on a stale route
-    navigate('/');
+  // Practice navigation state
+  const [practiceTopicId, setPracticeTopicId] = useState<string | undefined>(undefined);
+  const [practiceFilter, setPracticeFilter] = useState<'all' | 'wrong' | 'bookmarked'>('all');
+
+  // Current result viewing state
+  const [currentExamRecord, setCurrentExamRecord] = useState<ExamRecord | null>(null);
+
+  // Notification Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
+  // Handlers
+  const handleUpdateCourseName = (newName: string) => {
+    const updated = updateCourseName(newName);
+    setCourseData(updated);
+    showToast(`Đã đổi tên môn học thành: "${newName}"`);
+  };
+
+  const handleStartPractice = (topicId?: string, filterMode: 'all' | 'wrong' | 'bookmarked' = 'all') => {
+    setPracticeTopicId(topicId);
+    setPracticeFilter(filterMode);
+    setCurrentView('practice');
+  };
+
+  const handleRecordAnswer = (rec: UserAnswerRecord) => {
+    const updated = recordQuestionAnswer(rec);
+    setStudyProgress({ ...updated });
+  };
+
+  const handleToggleBookmark = (qId: string) => {
+    const updated = toggleBookmarkQuestion(qId);
+    setStudyProgress({ ...updated });
+  };
+
+  const handleFinishExam = (result: ExamRecord) => {
+    const updatedHistory = saveExamResult(result);
+    setExamHistory(updatedHistory);
+    setCurrentExamRecord(result);
+    setCurrentView('result');
+    showToast(`Đã nộp bài thi thành công! Điểm: ${result.score.toFixed(1)}/10`);
+  };
+
+  const handleRetryWrongQuestions = (questionIds: string[]) => {
+    setPracticeTopicId('all');
+    setPracticeFilter('wrong');
+    setCurrentView('practice');
   };
 
   return (
-    <RestoreSessionModal
-      isOpen={showModal}
-      sessionData={sessionData}
-      onRestore={handleRestore}
-      onDiscard={handleDiscard}
-    />
-  );
-}
-
-function App() {
-  const { quiz } = useQuizStore();
-  const { filterType, setFilterType, searchQuery, setSearchQuery } = useEditorStore();
-
-  const editorFilterTabs = [
-    { type: 'all' as const, label: 'Tất cả', icon: null },
-    { type: 'mcq' as const, label: 'Trắc nghiệm', icon: ListChecks },
-    { type: 'truefalse' as const, label: 'Đúng/Sai', icon: CheckCircle },
-    { type: 'drag_drop_boxes' as const, label: 'Kéo thả', icon: LayoutGrid },
-    { type: 'fillblank' as const, label: 'Điền chỗ trống', icon: Type },
-  ];
-
-  return (
-    <BrowserRouter>
-      <div className="min-h-screen w-full bg-deep-space relative">
-        {/* Background Effects - Fixed behind everything */}
-        <div className="fixed inset-0 gradient-mesh pointer-events-none" />
-        <div className="blur-background pointer-events-none" />
-
-        {/* Session Restore Modal */}
-        <SessionRestoreHandler />
-
-        {/* Main Layout */}
-        <div className="relative z-10">
-          <Routes>
-            {/* Home Page - Full scrolling */}
-            <Route path="/" element={<LandingPage />} />
-            
-            {/* Editor Page - Custom scroll layout */}
-            <Route path="/editor" element={
-              <div className="h-screen w-full flex flex-col overflow-hidden">
-                {/* Topbar - Fixed */}
-                <Topbar />
-
-                {/* Filter Bar - Fixed below topbar, right of sidebar */}
-                <div 
-                  className="fixed z-20 hidden lg:block"
-                  style={{
-                    top: TOPBAR_HEIGHT,
-                    left: SIDEBAR_WIDTH,
-                    right: 0,
-                    height: FILTER_BAR_HEIGHT,
-                    background: 'rgba(10, 10, 26, 0.92)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  <div className="h-full px-4 flex items-center gap-4 overflow-x-auto no-scrollbar">
-                    {/* Filter Tabs */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {editorFilterTabs.map(({ type, label, icon: Icon }) => (
-                        <button
-                          key={type}
-                          onClick={() => setFilterType(type)}
-                          className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                            filterType === type
-                              ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
-                              : 'text-white/60 hover:text-white hover:bg-white/5'
-                          )}
-                        >
-                          {Icon && <Icon size={14} />}
-                          {label}
-                          {type !== 'all' && (
-                            <Badge size="sm" className="ml-1">
-                              {(quiz.questions?.filter((q) => q?.type === type) ?? []).length}
-                            </Badge>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Search */}
-                    <div className="flex-1 min-w-[200px] max-w-[300px]">
-                      <Input
-                        placeholder="Tìm kiếm..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sidebar - Fixed */}
-                <Sidebar />
-
-                {/* Content Area - Scrollable, uses inset for proper viewport */}
-                <main
-                  className="hidden lg:block overflow-y-auto"
-                  style={{
-                    position: 'fixed',
-                    top: TOPBAR_HEIGHT + FILTER_BAR_HEIGHT,
-                    left: SIDEBAR_WIDTH,
-                    right: 0,
-                    bottom: BOTTOMBAR_HEIGHT,
-                  }}
-                >
-                  <EditorPage />
-                </main>
-
-                {/* Mobile Content Area - Fill available space */}
-                <main 
-                  className="lg:hidden flex-1 overflow-y-auto"
-                  style={{
-                    // Start below topbar with safe area
-                    paddingTop: 'calc(env(safe-area-inset-top) + 56px)',
-                    // Extra space at bottom for scrolling past the fixed bottom bar
-                    paddingBottom: '96px',
-                    // Prevent horizontal overflow
-                    overflowX: 'hidden',
-                    // Smooth scrolling on iOS
-                    WebkitOverflowScrolling: 'touch',
-                  }}
-                >
-                  <EditorPage />
-                </main>
-
-                {/* Bottom Status Bar - Fixed at bottom */}
-                <StatusBar />
-              </div>
-            } />
-            <Route path="/test/:quizId" element={<TestLayout><TestRunnerPage /></TestLayout>} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/bank" element={<ComingSoon />} />
-            <Route path="/preview/:id" element={
-              <div className="h-screen w-full flex flex-col overflow-hidden">
-                <Topbar />
-                <Sidebar />
-                <main 
-                  className="flex-1 overflow-y-auto hidden lg:block"
-                  style={{
-                    marginLeft: SIDEBAR_WIDTH,
-                    paddingBottom: BOTTOMBAR_HEIGHT,
-                  }}
-                >
-                  <EditorPage />
-                </main>
-                <main className="flex-1 overflow-y-auto lg:hidden">
-                  <EditorPage />
-                </main>
-                <StatusBar />
-              </div>
-            } />
-          </Routes>
+    <div className="app-container">
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 76,
+          right: 20,
+          zIndex: 100,
+          padding: '12px 20px',
+          borderRadius: 10,
+          backgroundColor: toast.type === 'success' ? 'var(--success-text)' : 'var(--danger-text)',
+          color: '#ffffff',
+          fontWeight: 600,
+          fontSize: '0.9rem',
+          boxShadow: 'var(--shadow-xl)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <span>{toast.message}</span>
         </div>
+      )}
 
-        {/* Global Components */}
-        <ToastContainer />
-      </div>
-    </BrowserRouter>
-  );
-}
+      {/* Main Navbar */}
+      <Navbar
+        currentView={currentView}
+        setCurrentView={(v) => setCurrentView(v)}
+        courseData={courseData}
+        onUpdateCourseName={handleUpdateCourseName}
+        themeMode={themeMode}
+        onThemeChange={handleThemeChange}
+      />
 
-function ComingSoon() {
-  return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-white mb-4">Sắp ra mắt!</h1>
-        <p className="text-white/50 mb-8">Tính năng này đang được phát triển.</p>
-        <a href="/" className="text-neon-cyan hover:underline">
-          Quay lại trang chủ
-        </a>
-      </div>
+      {/* Main View Container */}
+      <main className="main-content">
+        {currentView === 'home' && (
+          <HomeView
+            courseData={courseData}
+            studyProgress={studyProgress}
+            examHistory={examHistory}
+            onStartPractice={handleStartPractice}
+            onStartExam={() => setCurrentView('exam')}
+            onOpenBankManager={() => setCurrentView('bank')}
+            onViewExamResult={(exam) => {
+              setCurrentExamRecord(exam);
+              setCurrentView('result');
+            }}
+          />
+        )}
+
+        {currentView === 'practice' && (
+          <PracticeView
+            courseData={courseData}
+            studyProgress={studyProgress}
+            initialTopicId={practiceTopicId}
+            initialFilter={practiceFilter}
+            onRecordAnswer={handleRecordAnswer}
+            onToggleBookmark={handleToggleBookmark}
+            onBackToHome={() => setCurrentView('home')}
+          />
+        )}
+
+        {currentView === 'exam' && (
+          <ExamView
+            courseData={courseData}
+            onFinishExam={handleFinishExam}
+            onCancelExam={() => setCurrentView('home')}
+          />
+        )}
+
+        {currentView === 'result' && currentExamRecord && (
+          <ResultView
+            examRecord={currentExamRecord}
+            onRetryWrongQuestions={handleRetryWrongQuestions}
+            onRetakeExam={() => setCurrentView('exam')}
+            onBackToHome={() => setCurrentView('home')}
+          />
+        )}
+
+        {currentView === 'bank' && (
+          <BankManagerView
+            courseData={courseData}
+            onUpdateCourse={(updated) => {
+              setCourseData(updated);
+              saveCourseData(updated);
+            }}
+            onNotify={showToast}
+          />
+        )}
+      </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="bottom-nav" aria-label="Điều hướng chính di động">
+        <button
+          className={`bottom-nav-item ${currentView === 'home' ? 'active' : ''}`}
+          onClick={() => setCurrentView('home')}
+        >
+          <BookOpen size={20} />
+          <span>Tổng quan</span>
+        </button>
+
+        <button
+          className={`bottom-nav-item ${currentView === 'practice' ? 'active' : ''}`}
+          onClick={() => setCurrentView('practice')}
+        >
+          <FileText size={20} />
+          <span>Luyện tập</span>
+        </button>
+
+        <button
+          className={`bottom-nav-item ${currentView === 'exam' || currentView === 'result' ? 'active' : ''}`}
+          onClick={() => setCurrentView('exam')}
+        >
+          <GraduationCap size={20} />
+          <span>Thi thử</span>
+        </button>
+
+        <button
+          className={`bottom-nav-item ${currentView === 'bank' ? 'active' : ''}`}
+          onClick={() => setCurrentView('bank')}
+        >
+          <Database size={20} />
+          <span>Ngân hàng</span>
+        </button>
+      </nav>
+
+      {/* Footer */}
+      <footer style={{
+        textAlign: 'center',
+        padding: '24px 20px',
+        borderTop: '1px solid var(--border-color)',
+        color: 'var(--text-subtle)',
+        fontSize: '0.825rem',
+        backgroundColor: 'var(--bg-surface)',
+        transition: 'var(--transition-theme)'
+      }}>
+        Ứng dụng Ôn tập & Thi thử Trắc nghiệm Cá nhân • Hỗ trợ hoàn toàn Offline
+      </footer>
     </div>
   );
-}
+};
 
 export default App;
