@@ -1006,6 +1006,244 @@ a {
   }
 }
 
+/* ================= PRACTICE HEADER REDESIGN ================= */
+.practice-header-card {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  transition: var(--transition-theme);
+}
+
+/* Hàng 1: Điều hướng & công cụ */
+.practice-header-row-1 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  width: 100%;
+}
+
+.practice-tool-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.practice-tool-btn:hover:not(:disabled) {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.practice-tool-btn.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.practice-icon-btn {
+  width: 36px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Tên chủ đề: Co giãn, 1 dòng, ellipsis, hiển thị đẹp */
+.practice-topic-selector {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.practice-topic-select {
+  width: 100%;
+  height: 100%;
+  padding: 0 26px 0 10px;
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.practice-topic-select:focus {
+  border-color: var(--border-focus);
+  background-color: var(--bg-card);
+}
+
+.practice-topic-chevron {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+/* Hàng 2: Bộ lọc cuộn ngang */
+.practice-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 1px 0;
+}
+
+.practice-filter-row::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.775rem;
+  font-weight: 600;
+  background-color: var(--bg-card-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.filter-chip:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.filter-chip.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 1px 4px var(--primary-glow);
+}
+
+/* Hàng 3: Cài đặt và tiến độ */
+.practice-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+}
+
+/* Công tắc mini */
+.auto-show-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  height: 24px;
+}
+
+.auto-show-switch-btn:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.auto-show-switch-btn.active {
+  background-color: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.mini-toggle-pill {
+  width: 26px;
+  height: 14px;
+  border-radius: 9999px;
+  background-color: var(--border-subtle);
+  position: relative;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mini-toggle-pill.active {
+  background-color: var(--primary);
+}
+
+.mini-toggle-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.mini-toggle-pill.active .mini-toggle-thumb {
+  left: 14px;
+}
+
+/* Bộ đếm câu */
+.practice-counter-badge {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.practice-counter-badge strong {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+/* Thanh tiến độ mảnh 3-4px */
+.practice-progress-line {
+  height: 3px;
+  border-radius: var(--radius-full);
+  margin-top: 1px;
+}
+
 /* Inputs & Form Controls */
 .input-text, input[type="text"], input[type="number"], select, textarea {
   background-color: var(--bg-input);

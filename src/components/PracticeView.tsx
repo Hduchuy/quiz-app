@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   RotateCcw, 
   CheckCircle, 
   Shuffle, 
@@ -139,6 +140,14 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     ? Math.round(((currentIndex + 1) / filteredQuestions.length) * 100) 
     : 0;
 
+  const currentTopic = courseData.topics.find(t => t.id === selectedTopicId);
+  const totalBankQuestions = courseData.topics.flatMap(t => t.questions).length;
+  const currentTopicFullTitle = selectedTopicId === 'all'
+    ? `Tất cả chủ đề (${totalBankQuestions} câu)`
+    : currentTopic
+    ? `Chủ đề ${courseData.topics.indexOf(currentTopic) + 1}: ${currentTopic.title} (${currentTopic.questions.length} câu)`
+    : 'Chọn chủ đề';
+
   return (
     <div style={{ 
       maxWidth: 900, 
@@ -148,171 +157,140 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
       flexDirection: 'column', 
       gap: 10 
     }}>
-      {/* Ultra-Compact Top Header Bar */}
-      <div className="card" style={{ padding: '10px 12px' }}>
-        {/* Row 1: Back, Topic dropdown, Shuffle, Bookmark & Palette Drawer Button */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          gap: 8, 
-          marginBottom: 8 
-        }}>
+      {/* Redesigned 3-Row Practice Header */}
+      <div className="practice-header-card">
+        {/* Hàng 1 — Điều hướng và công cụ */}
+        <div className="practice-header-row-1">
+          {/* Nút quay lại compact */}
           <button
             onClick={onBackToHome}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '6px 10px', flexShrink: 0 }}
+            className="practice-tool-btn"
             title="Quay lại trang chủ"
+            aria-label="Quay lại trang chủ"
           >
-            <ArrowLeft size={15} />
-            <span style={{ fontSize: '0.8rem' }}>Về</span>
+            <ArrowLeft size={16} />
+            <span>Về</span>
           </button>
 
-          {/* Topic Select */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Tên chủ đề trong vùng co giãn, một dòng, ellipsis khi quá dài */}
+          <div className="practice-topic-selector" title={currentTopicFullTitle}>
             <select
               value={selectedTopicId}
               onChange={(e) => setSelectedTopicId(e.target.value)}
-              className="input-text"
-              style={{
-                padding: '5px 8px',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap'
-              }}
+              className="practice-topic-select"
+              aria-label="Chọn chủ đề ôn tập"
             >
-              <option value="all">Tất cả ({courseData.topics.flatMap(t => t.questions).length} câu)</option>
+              <option value="all">Tất cả ({totalBankQuestions} câu)</option>
               {courseData.topics.map((t, idx) => (
                 <option key={t.id} value={t.id}>
                   CĐ {idx + 1}: {t.title} ({t.questions.length} câu)
                 </option>
               ))}
             </select>
+            <div className="practice-topic-chevron" aria-hidden="true">
+              <ChevronDown size={14} />
+            </div>
           </div>
 
-          {/* Shuffle Toggle */}
+          {/* Nút trộn câu bằng icon */}
           <button
-            className={`btn btn-sm ${isShuffle ? 'btn-primary' : 'btn-secondary'}`}
+            className={`practice-tool-btn practice-icon-btn ${isShuffle ? 'btn-primary' : ''}`}
             onClick={() => setIsShuffle(prev => !prev)}
-            title="Đảo ngẫu nhiên thứ tự câu hỏi"
-            style={{ padding: '6px 8px', flexShrink: 0 }}
+            title={isShuffle ? "Đang bật trộn ngẫu nhiên câu hỏi (bấm để tắt)" : "Trộn ngẫu nhiên thứ tự câu hỏi"}
+            aria-label="Trộn câu hỏi"
           >
-            <Shuffle size={14} />
+            <Shuffle size={15} />
           </button>
 
-          {/* Palette Drawer Trigger */}
+          {/* Nút mở bảng câu hỏi */}
           <button
-            className={`btn btn-sm ${showPalette ? 'btn-primary' : 'btn-outline'}`}
+            className={`practice-tool-btn ${showPalette ? 'btn-primary' : ''}`}
             onClick={() => setShowPalette(true)}
-            style={{ padding: '6px 10px', flexShrink: 0 }}
-            title="Mở bảng câu hỏi"
+            title="Mở bảng danh sách câu hỏi"
+            aria-label="Mở bảng câu hỏi"
           >
-            <Layers size={14} />
-            <span style={{ fontSize: '0.8rem' }}>Bảng</span>
+            <Layers size={15} />
+            <span>Bảng</span>
           </button>
         </div>
 
-        {/* Row 2: Filter Chips, Auto-show Switch, and Question Counter */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          gap: 6, 
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <button
-              className={`nav-btn btn-sm ${filterMode === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterMode('all')}
-              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-            >
-              Tất cả
-            </button>
+        {/* Hàng 2 — Bộ lọc (cuộn ngang, không xuống dòng, hiển thị rõ active) */}
+        <div className="practice-filter-row" role="tablist" aria-label="Bộ lọc câu hỏi">
+          <button
+            role="tab"
+            aria-selected={filterMode === 'all'}
+            className={`filter-chip ${filterMode === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterMode('all')}
+          >
+            Tất cả
+          </button>
 
-            <button
-              className={`nav-btn btn-sm ${filterMode === 'unanswered' ? 'active' : ''}`}
-              onClick={() => setFilterMode('unanswered')}
-              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-            >
-              Chưa làm
-            </button>
+          <button
+            role="tab"
+            aria-selected={filterMode === 'unanswered'}
+            className={`filter-chip ${filterMode === 'unanswered' ? 'active' : ''}`}
+            onClick={() => setFilterMode('unanswered')}
+          >
+            Chưa làm
+          </button>
 
-            <button
-              className={`nav-btn btn-sm ${filterMode === 'wrong' ? 'active' : ''}`}
-              onClick={() => setFilterMode('wrong')}
-              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-            >
-              Sai
-            </button>
+          <button
+            role="tab"
+            aria-selected={filterMode === 'wrong'}
+            className={`filter-chip ${filterMode === 'wrong' ? 'active' : ''}`}
+            onClick={() => setFilterMode('wrong')}
+          >
+            Câu sai
+          </button>
 
-            <button
-              className={`nav-btn btn-sm ${filterMode === 'bookmarked' ? 'active' : ''}`}
-              onClick={() => setFilterMode('bookmarked')}
-              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-            >
-              Lưu ({studyProgress.bookmarkedQuestionIds.length})
-            </button>
+          <button
+            role="tab"
+            aria-selected={filterMode === 'bookmarked'}
+            className={`filter-chip ${filterMode === 'bookmarked' ? 'active' : ''}`}
+            onClick={() => setFilterMode('bookmarked')}
+          >
+            Đã lưu ({studyProgress.bookmarkedQuestionIds.length})
+          </button>
+        </div>
+
+        {/* Hàng 3 — Cài đặt và tiến độ */}
+        <div className="practice-meta-row">
+          {/* Bên trái: Công tắc tự động hiển thị đáp án, nhãn ngắn gọn */}
+          <div
+            className={`auto-show-switch-btn ${autoShowAnswer ? 'active' : ''}`}
+            onClick={handleToggleAutoShow}
+            role="switch"
+            aria-checked={autoShowAnswer}
+            title="Tự động kiểm tra và hiển thị kết quả đúng/sai ngay sau khi bạn chọn"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                handleToggleAutoShow();
+              }
+            }}
+          >
+            <span>Hiện ĐA</span>
+            <div className={`mini-toggle-pill ${autoShowAnswer ? 'active' : ''}`}>
+              <div className="mini-toggle-thumb" />
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-            {/* Compact Auto-show Answer Switch */}
-            <div
-              onClick={handleToggleAutoShow}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                cursor: 'pointer',
-                userSelect: 'none',
-                padding: '3px 7px',
-                borderRadius: 'var(--radius-xs)',
-                backgroundColor: autoShowAnswer ? 'var(--primary-light)' : 'var(--bg-card-subtle)',
-                border: `1px solid ${autoShowAnswer ? 'var(--primary)' : 'var(--border-color)'}`,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: autoShowAnswer ? 'var(--primary)' : 'var(--text-secondary)'
-              }}
-              title="Tự động hiển thị kết quả đúng/sai ngay sau khi bạn hoàn thành lựa chọn"
-            >
-              <span>Hiện ĐA</span>
-              <div style={{
-                width: 26,
-                height: 14,
-                borderRadius: 8,
-                backgroundColor: autoShowAnswer ? 'var(--primary)' : 'var(--border-subtle)',
-                position: 'relative',
-                transition: 'background-color 0.2s ease',
-                flexShrink: 0
-              }}>
-                <div style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  backgroundColor: '#ffffff',
-                  position: 'absolute',
-                  top: 2,
-                  left: autoShowAnswer ? 14 : 2,
-                  transition: 'left 0.2s ease'
-                }} />
-              </div>
-            </div>
-
-            {/* Question Counter */}
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, flexShrink: 0 }}>
-              {filteredQuestions.length > 0 ? (
-                <span><strong>{currentIndex + 1}</strong>/{filteredQuestions.length}</span>
-              ) : (
-                <span>0 câu</span>
-              )}
-            </div>
+          {/* Bên phải: Số câu hiện tại/tổng số câu */}
+          <div className="practice-counter-badge">
+            {filteredQuestions.length > 0 ? (
+              <span>
+                <strong>{currentIndex + 1}</strong>/{filteredQuestions.length}
+              </span>
+            ) : (
+              <span>0 câu</span>
+            )}
           </div>
         </div>
 
-        {/* Thin 3px Progress Line */}
+        {/* Bên dưới: Thanh tiến độ mảnh 3-4px */}
         {filteredQuestions.length > 0 && (
-          <div className="progress-bar-bg" style={{ marginTop: 8, height: 3 }}>
+          <div className="progress-bar-bg practice-progress-line" aria-hidden="true">
             <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
           </div>
         )}
