@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { CourseData, StudyProgress, ExamRecord, UserAnswerRecord } from './types/quiz';
+import { CourseData, StudyProgress, ExamRecord, UserAnswerRecord, ExamRetrySession, PracticeFilterMode } from './types/quiz';
 import { 
   loadCourseData, 
   saveCourseData, 
   loadStudyProgress, 
+  saveStudyProgress,
   recordQuestionAnswer, 
   toggleBookmarkQuestion, 
   loadExamHistory, 
   saveExamResult, 
-  updateCourseName 
+  updateCourseName,
+  loadExamRetrySession,
+  saveExamRetrySession
 } from './utils/storage';
 import { 
   ThemeMode, 
@@ -29,7 +32,22 @@ export const App: React.FC = () => {
   const [courseData, setCourseData] = useState<CourseData>(() => loadCourseData());
   const [studyProgress, setStudyProgress] = useState<StudyProgress>(() => loadStudyProgress());
   const [examHistory, setExamHistory] = useState<ExamRecord[]>(() => loadExamHistory());
-  const [currentView, setCurrentView] = useState<'home' | 'practice' | 'exam' | 'bank' | 'result'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'practice' | 'exam' | 'bank' | 'result'>(() => {
+    try {
+      const saved = localStorage.getItem('quiz_app_current_view');
+      if (saved === 'home' || saved === 'practice' || saved === 'exam' || saved === 'bank' || saved === 'result') {
+        return saved;
+      }
+    } catch (_) {}
+    return 'home';
+  });
+
+  const navigateToView = (view: 'home' | 'practice' | 'exam' | 'bank' | 'result') => {
+    setCurrentView(view);
+    try {
+      localStorage.setItem('quiz_app_current_view', view);
+    } catch (_) {}
+  };
 
   // Theme state
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
@@ -51,11 +69,40 @@ export const App: React.FC = () => {
   };
 
   // Practice navigation state
-  const [practiceTopicId, setPracticeTopicId] = useState<string | undefined>(undefined);
-  const [practiceFilter, setPracticeFilter] = useState<'all' | 'wrong' | 'bookmarked'>('all');
+  const [practiceTopicId, setPracticeTopicId] = useState<string | undefined>(() => {
+    try {
+      return localStorage.getItem('quiz_app_practice_topic') || undefined;
+    } catch {
+      return undefined;
+    }
+  });
+
+  const [practiceFilter, setPracticeFilter] = useState<PracticeFilterMode>(() => {
+    try {
+      const saved = localStorage.getItem('quiz_app_practice_filter');
+      if (saved === 'all' || saved === 'unanswered' || saved === 'wrong' || saved === 'bookmarked' || saved === 'exam_wrong') {
+        return saved as PracticeFilterMode;
+      }
+    } catch {}
+    return 'all';
+  });
 
   // Current result viewing state
-  const [currentExamRecord, setCurrentExamRecord] = useState<ExamRecord | null>(null);
+  const [currentExamRecord, setCurrentExamRecord] = useState<ExamRecord | null>(() => {
+    try {
+      const savedId = localStorage.getItem('quiz_app_current_exam_id');
+      const history = loadExamHistory();
+      if (savedId) {
+        const found = history.find(e => e.id === savedId);
+        if (found) return found;
+      }
+      return history[0] || null;
+    } catch (_) {}
+    return null;
+  });
+
+  // Active retry session state
+  const [retryExamSession, setRetryExamSession] = useState<ExamRetrySession | null>(() => loadExamRetrySession());
 
   // Notification Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -74,10 +121,15 @@ export const App: React.FC = () => {
     showToast(`Đã đổi tên môn học thành: "${newName}"`);
   };
 
-  const handleStartPractice = (topicId?: string, filterMode: 'all' | 'wrong' | 'bookmarked' = 'all') => {
+  const handleStartPractice = (topicId?: string, filterMode: PracticeFilterMode = 'all') => {
     setPracticeTopicId(topicId);
     setPracticeFilter(filterMode);
-    setCurrentView('practice');
+    navigateToView('practice');
+    try {
+      localStorage.setItem('quiz_app_practice_filter', filterMode);
+      if (topicId) localStorage.setItem('quiz_app_practice_topic', topicId);
+      else localStorage.removeItem('quiz_app_practice_topic');
+    } catch (_) {}
   };
 
   const handleRecordAnswer = (rec: UserAnswerRecord) => {
@@ -94,14 +146,53 @@ export const App: React.FC = () => {
     const updatedHistory = saveExamResult(result);
     setExamHistory(updatedHistory);
     setCurrentExamRecord(result);
-    setCurrentView('result');
+    try {
+      localStorage.setItem('quiz_app_current_exam_id', result.id);
+    } catch (_) {}
+    navigateToView('result');
     showToast(`Đã nộp bài thi thành công! Điểm: ${result.score.toFixed(1)}/10`);
   };
 
   const handleRetryWrongQuestions = (questionIds: string[]) => {
+    const uniqueIds = Array.from(new Set(questionIds.filter(Boolean)));
+    if (uniqueIds.length === 0) {
+      showToast('Không có câu hỏi sai nào để luyện lại.', 'error');
+      return;
+    }
+
+    // Reset answer state in studyProgress ONLY for these specific wrong questions
+    // so the user starts with a clean attempt for this retry session
+    const currentProgress = loadStudyProgress();
+    let progressModified = false;
+    uniqueIds.forEach(id => {
+      if (currentProgress.answeredQuestions[id]) {
+        delete currentProgress.answeredQuestions[id];
+        progressModified = true;
+      }
+    });
+    if (progressModified) {
+      saveStudyProgress(currentProgress);
+      setStudyProgress({ ...currentProgress });
+    }
+
+    const examId = currentExamRecord?.id || `exam_${Date.now()}`;
+    const session: ExamRetrySession = {
+      examId,
+      questionIds: uniqueIds,
+      timestamp: Date.now()
+    };
+    saveExamRetrySession(session);
+    setRetryExamSession(session);
+
     setPracticeTopicId('all');
-    setPracticeFilter('wrong');
-    setCurrentView('practice');
+    setPracticeFilter('exam_wrong');
+    navigateToView('practice');
+    try {
+      localStorage.setItem('quiz_app_practice_filter', 'exam_wrong');
+      localStorage.setItem('quiz_app_practice_topic', 'all');
+    } catch (_) {}
+
+    showToast(`Bắt đầu luyện lại ${uniqueIds.length} câu sai từ bài thi!`);
   };
 
   return (
@@ -132,7 +223,7 @@ export const App: React.FC = () => {
       {/* Main Navbar */}
       <Navbar
         currentView={currentView}
-        setCurrentView={(v) => setCurrentView(v)}
+        setCurrentView={(v) => navigateToView(v)}
         courseData={courseData}
         onUpdateCourseName={handleUpdateCourseName}
         themeMode={themeMode}
@@ -147,11 +238,14 @@ export const App: React.FC = () => {
             studyProgress={studyProgress}
             examHistory={examHistory}
             onStartPractice={handleStartPractice}
-            onStartExam={() => setCurrentView('exam')}
-            onOpenBankManager={() => setCurrentView('bank')}
+            onStartExam={() => navigateToView('exam')}
+            onOpenBankManager={() => navigateToView('bank')}
             onViewExamResult={(exam) => {
               setCurrentExamRecord(exam);
-              setCurrentView('result');
+              try {
+                localStorage.setItem('quiz_app_current_exam_id', exam.id);
+              } catch (_) {}
+              navigateToView('result');
             }}
           />
         )}
@@ -162,9 +256,10 @@ export const App: React.FC = () => {
             studyProgress={studyProgress}
             initialTopicId={practiceTopicId}
             initialFilter={practiceFilter}
+            retryQuestionIds={retryExamSession?.questionIds}
             onRecordAnswer={handleRecordAnswer}
             onToggleBookmark={handleToggleBookmark}
-            onBackToHome={() => setCurrentView('home')}
+            onBackToHome={() => navigateToView('home')}
           />
         )}
 
@@ -172,7 +267,7 @@ export const App: React.FC = () => {
           <ExamView
             courseData={courseData}
             onFinishExam={handleFinishExam}
-            onCancelExam={() => setCurrentView('home')}
+            onCancelExam={() => navigateToView('home')}
           />
         )}
 
@@ -180,8 +275,8 @@ export const App: React.FC = () => {
           <ResultView
             examRecord={currentExamRecord}
             onRetryWrongQuestions={handleRetryWrongQuestions}
-            onRetakeExam={() => setCurrentView('exam')}
-            onBackToHome={() => setCurrentView('home')}
+            onRetakeExam={() => navigateToView('exam')}
+            onBackToHome={() => navigateToView('home')}
           />
         )}
 
@@ -202,7 +297,7 @@ export const App: React.FC = () => {
         <nav className="bottom-nav" aria-label="Điều hướng chính di động">
           <button
             className={`bottom-nav-item ${currentView === 'home' ? 'active' : ''}`}
-            onClick={() => setCurrentView('home')}
+            onClick={() => navigateToView('home')}
           >
             <BookOpen size={20} />
             <span>Trang chủ</span>
@@ -210,7 +305,7 @@ export const App: React.FC = () => {
 
           <button
             className="bottom-nav-item"
-            onClick={() => setCurrentView('practice')}
+            onClick={() => navigateToView('practice')}
           >
             <FileText size={20} />
             <span>Luyện tập</span>
@@ -218,7 +313,7 @@ export const App: React.FC = () => {
 
           <button
             className={`bottom-nav-item ${currentView === 'result' ? 'active' : ''}`}
-            onClick={() => setCurrentView('exam')}
+            onClick={() => navigateToView('exam')}
           >
             <GraduationCap size={20} />
             <span>Thi thử</span>
@@ -226,7 +321,7 @@ export const App: React.FC = () => {
 
           <button
             className={`bottom-nav-item ${currentView === 'bank' ? 'active' : ''}`}
-            onClick={() => setCurrentView('bank')}
+            onClick={() => navigateToView('bank')}
           >
             <Database size={20} />
             <span>Ngân hàng</span>

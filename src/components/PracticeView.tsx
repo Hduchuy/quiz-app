@@ -18,7 +18,8 @@ interface PracticeViewProps {
   courseData: CourseData;
   studyProgress: StudyProgress;
   initialTopicId?: string;
-  initialFilter?: 'all' | 'wrong' | 'bookmarked';
+  initialFilter?: 'all' | 'unanswered' | 'wrong' | 'bookmarked' | 'exam_wrong';
+  retryQuestionIds?: string[];
   onRecordAnswer: (record: UserAnswerRecord) => void;
   onToggleBookmark: (qId: string) => void;
   onBackToHome: () => void;
@@ -29,12 +30,13 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
   studyProgress,
   initialTopicId,
   initialFilter = 'all',
+  retryQuestionIds,
   onRecordAnswer,
   onToggleBookmark,
   onBackToHome
 }) => {
   const [selectedTopicId, setSelectedTopicId] = useState<string>(initialTopicId || 'all');
-  const [filterMode, setFilterMode] = useState<'all' | 'unanswered' | 'wrong' | 'bookmarked'>(initialFilter);
+  const [filterMode, setFilterMode] = useState<'all' | 'unanswered' | 'wrong' | 'bookmarked' | 'exam_wrong'>(initialFilter);
   const [isShuffle, setIsShuffle] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -60,27 +62,74 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     });
   };
 
+  // Auto-sync when initial props change
+  useEffect(() => {
+    if (initialFilter) {
+      setFilterMode(initialFilter);
+    }
+  }, [initialFilter]);
+
+  useEffect(() => {
+    if (initialTopicId) {
+      setSelectedTopicId(initialTopicId);
+    }
+  }, [initialTopicId]);
+
+  // Lookup map for fast question retrieval
+  const questionMap = useMemo(() => {
+    const map = new Map<string, Question>();
+    courseData.topics.forEach(t => {
+      t.questions.forEach(q => {
+        map.set(q.id, q);
+      });
+    });
+    return map;
+  }, [courseData]);
+
+  // Validated and deduplicated retry questions from exam
+  const validRetryQuestions = useMemo(() => {
+    if (!retryQuestionIds || retryQuestionIds.length === 0) return [];
+    const seen = new Set<string>();
+    const list: Question[] = [];
+    for (const id of retryQuestionIds) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        const q = questionMap.get(id);
+        if (q) list.push(q);
+      }
+    }
+    return list;
+  }, [retryQuestionIds, questionMap]);
+
   // Filter questions based on selection
   const filteredQuestions = useMemo(() => {
     let pool: Question[] = [];
 
-    if (selectedTopicId === 'all') {
-      pool = courseData.topics.flatMap(t => t.questions);
+    if (filterMode === 'exam_wrong') {
+      if (selectedTopicId === 'all') {
+        pool = validRetryQuestions;
+      } else {
+        pool = validRetryQuestions.filter(q => q.topicId === selectedTopicId);
+      }
     } else {
-      const topic = courseData.topics.find(t => t.id === selectedTopicId);
-      pool = topic ? [...topic.questions] : [];
-    }
+      if (selectedTopicId === 'all') {
+        pool = courseData.topics.flatMap(t => t.questions);
+      } else {
+        const topic = courseData.topics.find(t => t.id === selectedTopicId);
+        pool = topic ? [...topic.questions] : [];
+      }
 
-    if (filterMode === 'unanswered') {
-      pool = pool.filter(q => !studyProgress.answeredQuestions[q.id]);
-    } else if (filterMode === 'wrong') {
-      pool = pool.filter(q => {
-        const ans = studyProgress.answeredQuestions[q.id];
-        return ans && ans.isCorrect === false;
-      });
-    } else if (filterMode === 'bookmarked') {
-      const bookmarkedSet = new Set(studyProgress.bookmarkedQuestionIds);
-      pool = pool.filter(q => bookmarkedSet.has(q.id));
+      if (filterMode === 'unanswered') {
+        pool = pool.filter(q => !studyProgress.answeredQuestions[q.id]);
+      } else if (filterMode === 'wrong') {
+        pool = pool.filter(q => {
+          const ans = studyProgress.answeredQuestions[q.id];
+          return ans && ans.isCorrect === false;
+        });
+      } else if (filterMode === 'bookmarked') {
+        const bookmarkedSet = new Set(studyProgress.bookmarkedQuestionIds);
+        pool = pool.filter(q => bookmarkedSet.has(q.id));
+      }
     }
 
     if (isShuffle) {
@@ -93,7 +142,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
     }
 
     return pool;
-  }, [courseData, selectedTopicId, filterMode, isShuffle, studyProgress]);
+  }, [courseData, selectedTopicId, filterMode, isShuffle, studyProgress, validRetryQuestions]);
 
   // Reset index & answer view when question list changes
   useEffect(() => {
@@ -142,7 +191,9 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
 
   const currentTopic = courseData.topics.find(t => t.id === selectedTopicId);
   const totalBankQuestions = courseData.topics.flatMap(t => t.questions).length;
-  const currentTopicFullTitle = selectedTopicId === 'all'
+  const currentTopicFullTitle = filterMode === 'exam_wrong' && selectedTopicId === 'all'
+    ? `Luyện lại ${validRetryQuestions.length} câu sai từ bài thi`
+    : selectedTopicId === 'all'
     ? `Tất cả chủ đề (${totalBankQuestions} câu)`
     : currentTopic
     ? `Chủ đề ${courseData.topics.indexOf(currentTopic) + 1}: ${currentTopic.title} (${currentTopic.questions.length} câu)`
@@ -216,6 +267,24 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
 
         {/* Hàng 2 — Bộ lọc (cuộn ngang, không xuống dòng, hiển thị rõ active) */}
         <div className="practice-filter-row" role="tablist" aria-label="Bộ lọc câu hỏi">
+          {validRetryQuestions.length > 0 && (
+            <button
+              role="tab"
+              aria-selected={filterMode === 'exam_wrong'}
+              className={`filter-chip ${filterMode === 'exam_wrong' ? 'active' : ''}`}
+              onClick={() => setFilterMode('exam_wrong')}
+              style={{
+                backgroundColor: filterMode === 'exam_wrong' ? 'var(--danger)' : 'var(--danger-light)',
+                color: filterMode === 'exam_wrong' ? '#ffffff' : 'var(--danger-text)',
+                borderColor: filterMode === 'exam_wrong' ? 'var(--danger)' : 'var(--danger-border)',
+                fontWeight: 700
+              }}
+            >
+              <RotateCcw size={13} style={{ marginRight: 4, display: 'inline', verticalAlign: '-1px' }} />
+              Sai từ bài thi ({validRetryQuestions.length})
+            </button>
+          )}
+
           <button
             role="tab"
             aria-selected={filterMode === 'all'}
@@ -296,6 +365,36 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
         )}
       </div>
 
+      {/* Exam Retry Info Banner */}
+      {filterMode === 'exam_wrong' && filteredQuestions.length > 0 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'var(--danger-light)',
+          border: '1px solid var(--danger-border)',
+          color: 'var(--danger-text)',
+          fontSize: '0.825rem',
+          fontWeight: 600,
+          flexWrap: 'wrap',
+          gap: 8
+        }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <RotateCcw size={14} />
+            Đang luyện lại {filteredQuestions.length} câu sai từ bài thi vừa qua
+          </span>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setFilterMode('all')}
+            style={{ fontSize: '0.75rem', padding: '2px 8px', color: 'var(--danger-text)' }}
+          >
+            Xem tất cả ({totalBankQuestions})
+          </button>
+        </div>
+      )}
+
       {/* Main Question Display Area */}
       {filteredQuestions.length === 0 ? (
         <div className="card" style={{ padding: '40px 18px', textAlign: 'center' }}>
@@ -303,7 +402,11 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             Không có câu hỏi nào theo bộ lọc đã chọn
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 16 }}>
-            {filterMode === 'wrong'
+            {filterMode === 'exam_wrong'
+              ? selectedTopicId !== 'all'
+                ? 'Không có câu hỏi sai nào thuộc chủ đề này trong bài thi. Bạn có thể chọn "Tất cả" để xem toàn bộ câu sai.'
+                : 'Không có câu hỏi sai nào trong bài thi vừa hoàn thành.'
+              : filterMode === 'wrong'
               ? 'Tuyệt vời! Bạn chưa có câu nào làm sai hoặc đã ôn hết danh sách sai.'
               : filterMode === 'bookmarked'
               ? 'Bạn chưa đánh dấu câu hỏi nào. Nhấn biểu tượng bookmark trên góc câu hỏi để lưu lại.'
@@ -311,9 +414,17 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
           </p>
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => setFilterMode('all')}
+            onClick={() => {
+              if (filterMode === 'exam_wrong' && selectedTopicId !== 'all') {
+                setSelectedTopicId('all');
+              } else {
+                setFilterMode('all');
+              }
+            }}
           >
-            Xem tất cả câu hỏi
+            {filterMode === 'exam_wrong' && selectedTopicId !== 'all'
+              ? `Xem tất cả ${validRetryQuestions.length} câu sai từ bài thi`
+              : 'Xem tất cả câu hỏi'}
           </button>
         </div>
       ) : currentQuestion ? (
@@ -404,7 +515,9 @@ export const PracticeView: React.FC<PracticeViewProps> = ({
             }}>
               <div>
                 <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  Bảng câu hỏi ({filteredQuestions.length} câu)
+                  {filterMode === 'exam_wrong'
+                    ? `Bảng câu hỏi sai (${filteredQuestions.length} câu)`
+                    : `Bảng câu hỏi (${filteredQuestions.length} câu)`}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   Chạm vào số câu để chuyển nhanh

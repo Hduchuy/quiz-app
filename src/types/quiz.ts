@@ -95,3 +95,12 @@ export interface ExamRecord {
     userAnswer: UserAnswerRecord;
   }[];
 }
+
+export type PracticeFilterMode = 'all' | 'unanswered' | 'wrong' | 'bookmarked' | 'exam_wrong';
+
+export interface ExamRetrySession {
+  examId: string;
+  questionIds: string[];
+  timestamp: number;
+}
+

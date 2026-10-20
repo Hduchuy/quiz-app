@@ -1,10 +1,11 @@
-import { CourseData, StudyProgress, ExamRecord, Question, UserAnswerRecord } from '../types/quiz';
+import { CourseData, StudyProgress, ExamRecord, Question, UserAnswerRecord, ExamRetrySession } from '../types/quiz';
 import { DEFAULT_COURSE } from '../data/defaultCourse';
 
 const STORAGE_KEYS = {
   COURSE_DATA: 'quiz_app_course_data',
   STUDY_PROGRESS: 'quiz_app_study_progress',
-  EXAM_HISTORY: 'quiz_app_exam_history'
+  EXAM_HISTORY: 'quiz_app_exam_history',
+  EXAM_RETRY_SESSION: 'quiz_app_exam_retry_session'
 };
 
 // 1. Course Data Management
@@ -195,14 +196,47 @@ export function resetExamHistory(): void {
   localStorage.removeItem(STORAGE_KEYS.EXAM_HISTORY);
 }
 
-// 4. Export & Import Backup
+// 4. Exam Retry Session Management
+export function saveExamRetrySession(session: ExamRetrySession): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXAM_RETRY_SESSION, JSON.stringify(session));
+  } catch (err) {
+    console.error('Lỗi khi lưu phiên luyện lại câu sai:', err);
+  }
+}
+
+export function loadExamRetrySession(): ExamRetrySession | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXAM_RETRY_SESSION);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.questionIds)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Lỗi khi tải phiên luyện lại câu sai:', err);
+  }
+  return null;
+}
+
+export function clearExamRetrySession(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.EXAM_RETRY_SESSION);
+  } catch (err) {
+    console.error('Lỗi khi xóa phiên luyện lại câu sai:', err);
+  }
+}
+
+// 5. Export & Import Backup
 export function exportBackupData(): string {
   const backup = {
     app: 'quiz-app-personal',
     exportedAt: new Date().toISOString(),
     courseData: loadCourseData(),
     studyProgress: loadStudyProgress(),
-    examHistory: loadExamHistory()
+    examHistory: loadExamHistory(),
+    examRetrySession: loadExamRetrySession()
   };
   return JSON.stringify(backup, null, 2);
 }
@@ -217,6 +251,7 @@ export function importBackupData(jsonString: string): { success: boolean; messag
       courseToSave = data.courseData;
       if (data.studyProgress) saveStudyProgress(data.studyProgress);
       if (data.examHistory) localStorage.setItem(STORAGE_KEYS.EXAM_HISTORY, JSON.stringify(data.examHistory));
+      if (data.examRetrySession) saveExamRetrySession(data.examRetrySession);
     } else if (data.topics && Array.isArray(data.topics)) {
       courseToSave = data;
     } else if (Array.isArray(data) && data[0]?.questions) {

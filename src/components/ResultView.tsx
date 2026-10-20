@@ -22,9 +22,13 @@ export const ResultView: React.FC<ResultViewProps> = ({
 }) => {
   const [filterMode, setFilterMode] = useState<'all' | 'wrong' | 'correct'>('all');
 
-  const wrongQuestionIds = examRecord.questions
-    .filter(item => !item.userAnswer.isCorrect)
-    .map(item => item.question.id);
+  const wrongQuestionIds = Array.from(
+    new Set(
+      examRecord.questions
+        .filter(item => !item.userAnswer.isCorrect && item.question?.id)
+        .map(item => item.question.id)
+    )
+  );
 
   const filteredQuestions = examRecord.questions.filter(item => {
     if (filterMode === 'wrong') return !item.userAnswer.isCorrect;
